@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "emcal"
+version = "0.0.1"
+description = "Gaussian-process Bayesian optimization for nonlinear model calibration"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [
+    { name = "Montana Carlozo", email = "mcarlozo@nd.edu" },
+    { name = "Alexander Dowling", email = "adowling@nd.edu" },
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+]
+
+[project.urls]
+Homepage = "https://github.com/DowlingLab/emcal"
+Repository = "https://github.com/DowlingLab/emcal"
+
+[tool.setuptools.packages.find]
+where = ["src"]
