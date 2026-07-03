@@ -103,15 +103,18 @@ def _capture_shown_figure(plot_fn):
     return fig
 
 
-def build_fixture():
-    """Regenerate a small deterministic CS1 (method 7) run and save as a JobContext workspace."""
+def build_fixture(method_val=7):
+    """Regenerate a small deterministic CS1 run (given method) and save as a JobContext workspace.
+
+    Default method_val=7 (E[SSE]) is the original fixture, byte-identical to before this
+    parameter existed. method_val=1/6 are additive guard fixtures (see run_analysis)."""
     from emcal.GPBO_Classes_New import (
         MethodName, EpSchedule, Kernel, GenMethod,
         GPBOMethod, ExplorationBias, BOConfig, GPBODriver,
     )
     from emcal.case_studies import get_case_study, make_case_study_simulator
 
-    method = GPBOMethod(MethodName(7))
+    method = GPBOMethod(MethodName(method_val))
     problem = get_case_study(1)
     sim = make_case_study_simulator(problem, 0, None, 1)
     exp = sim.generate_experimental_data(5, GenMethod(2), None, 0.01)
@@ -131,7 +134,7 @@ def build_fixture():
     # Statepoint keys the per-run analysis methods read. bo_runs_in_job / bo_iter_tot mirror the
     # fixture's bo_run_tot=1 and bo_iter_tot=3 above; parameter_trajectories/hyperparameter_trajectories need them to
     # size their (runs x iters x dim) arrays. w_noise is read by the objective-analysis path.
-    sp = {"cs_name_val": 1, "meth_name_val": 7, "ep_enum_val": 1, "bo_run_num": 1,
+    sp = {"cs_name_val": 1, "meth_name_val": method_val, "ep_enum_val": 1, "bo_run_num": 1,
           "bo_run_tot": 1, "kernel_enum_val": 1, "gen_meth_theta": 1,
           "bo_runs_in_job": 1, "bo_iter_tot": 3, "w_noise": False,
           # Full set of keys read by __rebuild_cs (gp_heat_map_data). These mirror the fixture's
@@ -172,6 +175,22 @@ def run_analysis(ws):
     with open(os.path.join(ws_plot_params, "signac_statepoint.json"), "w") as f:
         json.dump(sp_for_plot_params, f)
     jc_plot_params = JobContext(ws_plot_params, sp_for_plot_params, job_id="fix_plot")
+
+    # Guard fixtures for gp_heat_map_data's EI branches the method-7 fixture never reaches:
+    # method 1 (ObjectiveGP, is_emulator=False) exercises the `elif method.is_emulator == False`
+    # acq branch; method 6 (Monte Carlo) exercises the per-theta sparse-grid/MC EI loop. Method 5
+    # (Sparse Grid) is skipped -- it needs the optional Tasmanian dependency.
+    ws_method1 = build_fixture(method_val=1)
+    jc_method1 = JobContext(
+        ws_method1, json.load(open(os.path.join(ws_method1, "signac_statepoint.json"))),
+        job_id="fix_m1",
+    )
+    ws_method6 = build_fixture(method_val=6)
+    jc_method6 = JobContext(
+        ws_method6, json.load(open(os.path.join(ws_method6, "signac_statepoint.json"))),
+        job_id="fix_m6",
+    )
+
     out = {}
     # parameter_trajectories / hyperparameter_trajectories / objective_trajectories exercise the
     # per-run column readers signac-free (the columns they read must stay consistent with
@@ -194,6 +213,10 @@ def run_analysis(ws):
         # GPPrediction rewrite (design Q3, C). Deterministic: they use the SAVED trained GP.
         "gp_heat_map_data": lambda: ga.gp_heat_map_data(jc, 1, 1, 0),
         "gp_heat_map_data_ei": lambda: ga.gp_heat_map_data(jc, 1, 1, 0, get_ei=True),
+        # Method-1 (ObjectiveGP) and method-6 (Monte Carlo) EI branches -- see fixture comment
+        # above. Prior to this, gp_heat_map_data's EI path was only ever exercised on method 7.
+        "gp_heat_map_data_ei_method1": lambda: ga.gp_heat_map_data(jc_method1, 1, 1, 0, get_ei=True),
+        "gp_heat_map_data_ei_method6": lambda: ga.gp_heat_map_data(jc_method6, 1, 1, 0, get_ei=True),
         # Plotting smoke checks (7B guard): these are the KEEP (per-job) Plotters entry points
         # that will survive the analysis.py/plotting.py trim. They had zero test coverage before
         # this, so this pins their structure (axes/lines/collections counts) ahead of the trim --

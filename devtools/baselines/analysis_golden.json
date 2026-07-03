@@ -447,6 +447,168 @@
       }
     ]
   },
+  "gp_heat_map_data_ei_method1": {
+    "ok": true,
+    "fp": [
+      {
+        "kind": "list",
+        "len": 4,
+        "fp": [
+          {
+            "kind": "ndarray",
+            "shape": [
+              20,
+              20
+            ],
+            "nansum": 43448.950304
+          },
+          {
+            "kind": "ndarray",
+            "shape": [
+              20,
+              20
+            ],
+            "nansum": 33511.086799
+          },
+          {
+            "kind": "ndarray",
+            "shape": [
+              20,
+              20
+            ],
+            "nansum": 2879059.380018
+          }
+        ]
+      },
+      {
+        "kind": "ndarray",
+        "shape": [
+          2,
+          20,
+          20
+        ],
+        "nansum": -0.0
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "idcs",
+          "min_sse",
+          "names",
+          "opt_acq",
+          "train",
+          "true"
+        ]
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "bo_iter_tot",
+          "bo_run_num",
+          "bo_run_tot",
+          "bo_runs_in_job",
+          "cs_name_val",
+          "ei_tol",
+          "ep0",
+          "ep_enum_val",
+          "gen_heat_map_data",
+          "gen_meth_theta",
+          "kernel_enum_val",
+          "lenscl",
+          "meth_name_val",
+          "normalize",
+          "obj_tol",
+          "outputscl",
+          "reoptimize_obj",
+          "retrain_GP",
+          "seed",
+          "sep_fact",
+          "w_noise"
+        ]
+      }
+    ]
+  },
+  "gp_heat_map_data_ei_method6": {
+    "ok": true,
+    "fp": [
+      {
+        "kind": "list",
+        "len": 4,
+        "fp": [
+          {
+            "kind": "ndarray",
+            "shape": [
+              20,
+              20
+            ],
+            "nansum": 43448.950304
+          },
+          {
+            "kind": "ndarray",
+            "shape": [
+              20,
+              20
+            ],
+            "nansum": 96749.762268
+          },
+          {
+            "kind": "ndarray",
+            "shape": [
+              20,
+              20
+            ],
+            "nansum": 20192616.31656
+          }
+        ]
+      },
+      {
+        "kind": "ndarray",
+        "shape": [
+          2,
+          20,
+          20
+        ],
+        "nansum": -0.0
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "idcs",
+          "min_sse",
+          "names",
+          "opt_acq",
+          "train",
+          "true"
+        ]
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "bo_iter_tot",
+          "bo_run_num",
+          "bo_run_tot",
+          "bo_runs_in_job",
+          "cs_name_val",
+          "ei_tol",
+          "ep0",
+          "ep_enum_val",
+          "gen_heat_map_data",
+          "gen_meth_theta",
+          "kernel_enum_val",
+          "lenscl",
+          "meth_name_val",
+          "normalize",
+          "obj_tol",
+          "outputscl",
+          "reoptimize_obj",
+          "retrain_GP",
+          "seed",
+          "sep_fact",
+          "w_noise"
+        ]
+      }
+    ]
+  },
   "plot_hyperparameters": {
     "ok": true,
     "fp": {
