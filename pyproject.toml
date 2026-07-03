@@ -51,8 +51,9 @@ gpflow = [
 sparsegrid = ["Tasmanian"]
 # Müller case studies (CS2/CS3) solve a Pyomo NLP and need an ipopt solver on PATH.
 muller = ["Pyomo"]
-# Results analysis & plotting. Currently signac-coupled (to be decoupled in a later phase).
-analysis = ["signac", "pygad"]
+# Results analysis & plotting. Accepts a real signac job (duck-typed via JobContext) but
+# does not import signac directly.
+analysis = ["signac"]
 # Development / testing.
 dev = [
     "pytest>=6.1.2",

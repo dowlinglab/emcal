@@ -173,11 +173,11 @@ def run_analysis(ws):
         json.dump(sp_for_plot_params, f)
     jc_plot_params = JobContext(ws_plot_params, sp_for_plot_params, job_id="fix_plot")
     out = {}
-    # parameter_trajectories / hyperparameter_trajectories exercise the per-run column readers signac-free (the columns
-    # they read must stay consistent with get_run_dataframe's df across renames). objective_trajectories
-    # is intentionally recorded as ok=False: its "objs" path builds LS_Analysis, which needs a live
-    # signac project for the least-squares reference values, so it cannot run signac-free. That is the
-    # package/paper boundary, not a regression -- the golden simply pins that expectation.
+    # parameter_trajectories / hyperparameter_trajectories / objective_trajectories exercise the
+    # per-run column readers signac-free (the columns they read must stay consistent with
+    # get_run_dataframe's df across renames). Post-7B-trim, objective_trajectories no longer
+    # builds a least-squares reference line (that was LS_Analysis, now archive-only) -- it
+    # returns the per-run trajectory with data_true=None instead of erroring out.
     checks = {
         "get_run_dataframe": lambda: ga.get_run_dataframe(jc),
         "best_error": lambda: ga.best_error(jc),

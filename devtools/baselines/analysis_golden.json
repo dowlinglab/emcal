@@ -138,8 +138,75 @@
     ]
   },
   "objective_trajectories": {
-    "ok": false,
-    "error": "AttributeError: 'NoneType' object has no attribute 'find_jobs'"
+    "ok": true,
+    "fp": [
+      {
+        "kind": "ndarray",
+        "shape": [
+          1,
+          3,
+          3
+        ],
+        "nansum": 106470.196316
+      },
+      {
+        "kind": "list",
+        "len": 3,
+        "fp": [
+          {
+            "kind": "str"
+          },
+          {
+            "kind": "str"
+          },
+          {
+            "kind": "str"
+          }
+        ]
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "acq",
+          "min_sse",
+          "sse"
+        ]
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "bo_iter_tot",
+          "bo_run_num",
+          "bo_run_tot",
+          "bo_runs_in_job",
+          "cs_name_val",
+          "ei_tol",
+          "ep0",
+          "ep_enum_val",
+          "gen_heat_map_data",
+          "gen_meth_theta",
+          "kernel_enum_val",
+          "lenscl",
+          "meth_name_val",
+          "normalize",
+          "obj_tol",
+          "outputscl",
+          "reoptimize_obj",
+          "retrain_GP",
+          "seed",
+          "sep_fact",
+          "w_noise"
+        ]
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "acq",
+          "min_sse",
+          "sse"
+        ]
+      }
+    ]
   },
   "parameter_trajectories": {
     "ok": true,
