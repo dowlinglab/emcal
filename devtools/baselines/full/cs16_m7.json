@@ -1,0 +1,141 @@
+{
+  "cs_val": 16,
+  "cs_name": "Water-Glycerol",
+  "method_val": 7,
+  "method": "A3",
+  "emulator": true,
+  "num_x_data": 10,
+  "iters": 3,
+  "runs": 1,
+  "runs_out": [
+    {
+      "run": 0,
+      "why_term": "max_budget",
+      "results_df": [
+        {
+          "BO Iter": 1,
+          "Best Error": 2920.1293428662,
+          "Exploration Bias": 1.0,
+          "Theta Opt Acq": [
+            -71.7980588313,
+            -111.8099356069
+          ],
+          "Opt Acq": 256140872006.4962,
+          "Acq Obj Act": 715.4587615616,
+          "MSE Acq Act": 71.5458761562,
+          "Theta Min Obj": [
+            -523.4981009342,
+            491.6026985345
+          ],
+          "Min Obj GP": 3626.6165854899,
+          "Min Obj Act": 715.4587615616,
+          "MSE Obj GP": 362.661658549,
+          "MSE Obj Act": 71.5458761562,
+          "Time/Iter": 15.2495079041,
+          "BO Method": "E[SSE]",
+          "Max Evals": 3,
+          "Theta Acq Act Cum": [
+            -71.7980588313,
+            -111.8099356069
+          ],
+          "Theta Obj GP Cum": [
+            -523.4981009342,
+            491.6026985345
+          ],
+          "Theta Obj Act Cum": [
+            -523.4981009342,
+            491.6026985345
+          ],
+          "Termination": "max_budget",
+          "Total Run Time": 37.4087588787,
+          "Min Obj GP Cum": 3626.6165854899,
+          "Min Obj Act Cum": 715.4587615616,
+          "Acq Obj Act Cum": 715.4587615616
+        },
+        {
+          "BO Iter": 2,
+          "Best Error": 202.9530227199,
+          "Exploration Bias": 1.0,
+          "Theta Opt Acq": [
+            -72.6230860011,
+            -114.2651574494
+          ],
+          "Opt Acq": 222587898189.34155,
+          "Acq Obj Act": 457.4522057237,
+          "MSE Acq Act": 45.7452205724,
+          "Theta Min Obj": [
+            -436.6681597243,
+            354.4225989175
+          ],
+          "Min Obj GP": 2983.2459553404,
+          "Min Obj Act": 457.4522057237,
+          "MSE Obj GP": 298.324595534,
+          "MSE Obj Act": 45.7452205724,
+          "Time/Iter": 10.8938732147,
+          "BO Method": "E[SSE]",
+          "Max Evals": 3,
+          "Theta Acq Act Cum": [
+            -72.6230860011,
+            -114.2651574494
+          ],
+          "Theta Obj GP Cum": [
+            -436.6681597243,
+            354.4225989175
+          ],
+          "Theta Obj Act Cum": [
+            -436.6681597243,
+            354.4225989175
+          ],
+          "Termination": "max_budget",
+          "Total Run Time": 37.4087588787,
+          "Min Obj GP Cum": 2983.2459553404,
+          "Min Obj Act Cum": 457.4522057237,
+          "Acq Obj Act Cum": 457.4522057237
+        },
+        {
+          "BO Iter": 3,
+          "Best Error": 202.9530227199,
+          "Exploration Bias": 1.0,
+          "Theta Opt Acq": [
+            -72.3544912519,
+            -115.4352782771
+          ],
+          "Opt Acq": 195608538122.2893,
+          "Acq Obj Act": 391.9018650667,
+          "MSE Acq Act": 39.1901865067,
+          "Theta Min Obj": [
+            -386.6910636791,
+            278.9678365836
+          ],
+          "Min Obj GP": 2448.6471510035,
+          "Min Obj Act": 391.9018650667,
+          "MSE Obj GP": 244.8647151004,
+          "MSE Obj Act": 39.1901865067,
+          "Time/Iter": 11.2653777599,
+          "BO Method": "E[SSE]",
+          "Max Evals": 3,
+          "Theta Acq Act Cum": [
+            -72.3544912519,
+            -115.4352782771
+          ],
+          "Theta Obj GP Cum": [
+            -386.6910636791,
+            278.9678365836
+          ],
+          "Theta Obj Act Cum": [
+            -386.6910636791,
+            278.9678365836
+          ],
+          "Termination": "max_budget",
+          "Total Run Time": 37.4087588787,
+          "Min Obj GP Cum": 2448.6471510035,
+          "Min Obj Act Cum": 391.9018650667,
+          "Acq Obj Act Cum": 391.9018650667
+        }
+      ]
+    }
+  ],
+  "ok": true,
+  "attempts": 1,
+  "wall_sec": 37.44
+}

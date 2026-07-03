@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "iters": 3,
+    "runs": 1,
+    "methods": [
+      1,
+      4,
+      5,
+      7
+    ],
+    "cs_list": [
+      1,
+      2,
+      3,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "sim_seed": 1,
+    "run_seed": 1
+  },
+  "results": [
+    {
+      "cs_val": 1,
+      "method_val": 1,
+      "ok": false,
+      "error": "InvalidArgumentError()",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/devtools/capture_baseline.py\", line 132, in main\n    rec = run_one(cs_val, meth_val, args.iters, args.runs)\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/devtools/capture_baseline.py\", line 88, in run_one\n    gpbo_res_simple, _ = driver.run_bo_restarts(job=None)\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/bo_methods_lib/GPBO_Classes_New.py\", line 6786, in run_bo_restarts\n    bo_results_res, bo_results_GPs = self.__run_bo_workflow(i, job)\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/bo_methods_lib/GPBO_Classes_New.py\", line 6688, in __run_bo_workflow\n    self.__run_bo_to_term(run_num, job)\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/bo_methods_lib/GPBO_Classes_New.py\", line 6484, in __run_bo_to_term\n    iter_df, iter_max_ei_terms, gp_emulator_class = self.__run_bo_iter(\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/bo_methods_lib/GPBO_Classes_New.py\", line 6229, in __run_bo_iter\n    self.gp_emulator.train_gp()\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/bo_methods_lib/GPBO_Classes_New.py\", line 2058, in train_gp\n    aux = optimizer.minimize(\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/gpflow/optimizers/scipy.py\", line 159, in minimize\n    opt_result = scipy.optimize.minimize(\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_minimize.py\", line 738, in minimize\n    res = _minimize_lbfgsb(fun, x0, args, jac, bounds,\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_lbfgsb_py.py\", line 441, in _minimize_lbfgsb\n    f, g = func_and_grad(x)\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_differentiable_functions.py\", line 344, in fun_and_grad\n    self._update_fun()\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_differentiable_functions.py\", line 295, in _update_fun\n    fx = self._wrapped_fun(self.x)\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_differentiable_functions.py\", line 21, in wrapped\n    fx = fun(np.copy(x), *args)\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_optimize.py\", line 80, in __call__\n    self._compute_if_needed(x, *args)\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_optimize.py\", line 74, in _compute_if_needed\n    fg = self.fun(x, *args)\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/gpflow/optimizers/scipy.py\", line 224, in _eval\n    loss, grad = _tf_eval(tf.convert_to_tensor(x))\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/tensorflow/python/util/traceback_utils.py\", line 153, in error_handler\n    raise e.with_traceback(filtered_tb) from None\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/tensorflow/python/eager/execute.py\", line 53, in quick_execute\n    tensors = pywrap_tfe.TFE_Py_Execute(ctx._handle, device_name, op_name,\ntensorflow.python.framework.errors_impl.InvalidArgumentError: Graph execution error:\n\nDetected at node gradient_tape/truediv/RealDiv_1 defined at (most recent call last):\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/devtools/capture_baseline.py\", line 149, in <module>\n\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/devtools/capture_baseline.py\", line 132, in main\n\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/devtools/capture_baseline.py\", line 88, in run_one\n\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/bo_methods_lib/GPBO_Classes_New.py\", line 6786, in run_bo_restarts\n\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/bo_methods_lib/GPBO_Classes_New.py\", line 6688, in __run_bo_workflow\n\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/bo_methods_lib/GPBO_Classes_New.py\", line 6484, in __run_bo_to_term\n\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/bo_methods_lib/GPBO_Classes_New.py\", line 6229, in __run_bo_iter\n\n  File \"/Users/adowling/DowlingLab/GPBO_Emulators/bo_methods_lib/bo_methods_lib/GPBO_Classes_New.py\", line 2058, in train_gp\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/gpflow/optimizers/scipy.py\", line 159, in minimize\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_minimize.py\", line 738, in minimize\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_lbfgsb_py.py\", line 386, in _minimize_lbfgsb\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_optimize.py\", line 291, in _prepare_scalar_function\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_differentiable_functions.py\", line 223, in __init__\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_differentiable_functions.py\", line 295, in _update_fun\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_differentiable_functions.py\", line 21, in wrapped\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_optimize.py\", line 80, in __call__\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/scipy/optimize/_optimize.py\", line 74, in _compute_if_needed\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/gpflow/optimizers/scipy.py\", line 224, in _eval\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/gpflow/optimizers/scipy.py\", line 190, in _tf_eval\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/gpflow/optimizers/scipy.py\", line 192, in _tf_eval\n\n  File \"/Users/adowling/opt/anaconda3/envs/gpbo-dev/lib/python3.10/site-packages/gpflow/optimizers/scipy.py\", line 330, in _compute_loss_and_gradients\n\nExpected tensor of type double but got type float\n\t [[{{node gradient_tape/truediv/RealDiv_1}}]] [Op:__inference__tf_eval_2073]\n"
+    }
+  ]
+}

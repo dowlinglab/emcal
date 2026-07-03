@@ -1,0 +1,156 @@
+{
+  "cs_val": 12,
+  "cs_name": "Yield-Loss",
+  "method_val": 2,
+  "method": "B1",
+  "emulator": false,
+  "num_x_data": 10,
+  "iters": 3,
+  "runs": 1,
+  "runs_out": [
+    {
+      "run": 0,
+      "why_term": "max_budget",
+      "results_df": [
+        {
+          "BO Iter": 1,
+          "Best Error": 1.1249434969,
+          "Exploration Bias": 1.0,
+          "Theta Opt Acq": [
+            32.9602179185,
+            8.0635171518,
+            75.5704931857
+          ],
+          "Opt Acq": 6.3106e-06,
+          "Acq Obj Act": 2.6305421118,
+          "MSE Acq Act": 1.3881293075,
+          "Theta Min Obj": [
+            30.307801208,
+            9.6846314424,
+            71.4915297044
+          ],
+          "Min Obj GP": 1.0495577005,
+          "Min Obj Act": 0.6384613241,
+          "MSE Obj GP": 0.285638746,
+          "MSE Obj Act": 0.1893565054,
+          "Time/Iter": 4.0495049953,
+          "BO Method": "Log Conventional",
+          "Max Evals": 3,
+          "Theta Acq Act Cum": [
+            32.9602179185,
+            8.0635171518,
+            75.5704931857
+          ],
+          "Theta Obj GP Cum": [
+            30.307801208,
+            9.6846314424,
+            71.4915297044
+          ],
+          "Theta Obj Act Cum": [
+            30.307801208,
+            9.6846314424,
+            71.4915297044
+          ],
+          "Termination": "max_budget",
+          "Total Run Time": 13.9019346237,
+          "Min Obj GP Cum": 1.0495577005,
+          "Min Obj Act Cum": 0.6384613241,
+          "Acq Obj Act Cum": 2.6305421118
+        },
+        {
+          "BO Iter": 2,
+          "Best Error": 1.1249434969,
+          "Exploration Bias": 1.0,
+          "Theta Opt Acq": [
+            37.3846923076,
+            6.2646229563,
+            72.5804651869
+          ],
+          "Opt Acq": 3.942828496e-29,
+          "Acq Obj Act": 5.4185919317,
+          "MSE Acq Act": 22.5561293085,
+          "Theta Min Obj": [
+            30.3679917241,
+            9.5105954458,
+            71.5536778977
+          ],
+          "Min Obj GP": 1.0397402548,
+          "Min Obj Act": 0.647920169,
+          "MSE Obj GP": 0.2828482234,
+          "MSE Obj Act": 0.1911560968,
+          "Time/Iter": 4.2847008705,
+          "BO Method": "Log Conventional",
+          "Max Evals": 3,
+          "Theta Acq Act Cum": [
+            32.9602179185,
+            8.0635171518,
+            75.5704931857
+          ],
+          "Theta Obj GP Cum": [
+            30.3679917241,
+            9.5105954458,
+            71.5536778977
+          ],
+          "Theta Obj Act Cum": [
+            30.307801208,
+            9.6846314424,
+            71.4915297044
+          ],
+          "Termination": "max_budget",
+          "Total Run Time": 13.9019346237,
+          "Min Obj GP Cum": 1.0397402548,
+          "Min Obj Act Cum": 0.6384613241,
+          "Acq Obj Act Cum": 2.6305421118
+        },
+        {
+          "BO Iter": 3,
+          "Best Error": 1.1249434969,
+          "Exploration Bias": 1.0,
+          "Theta Opt Acq": [
+            30.3855656785,
+            9.3307742794,
+            71.6729617017
+          ],
+          "Opt Acq": 0.0944760878,
+          "Acq Obj Act": 0.6300853366,
+          "MSE Acq Act": 0.1877770815,
+          "Theta Min Obj": [
+            30.3601898633,
+            9.5129993201,
+            71.5526212354
+          ],
+          "Min Obj GP": 1.0389314387,
+          "Min Obj Act": 0.6439174209,
+          "MSE Obj GP": 0.2826195437,
+          "MSE Obj Act": 0.1903924764,
+          "Time/Iter": 5.5677287579,
+          "BO Method": "Log Conventional",
+          "Max Evals": 3,
+          "Theta Acq Act Cum": [
+            30.3855656785,
+            9.3307742794,
+            71.6729617017
+          ],
+          "Theta Obj GP Cum": [
+            30.3601898633,
+            9.5129993201,
+            71.5526212354
+          ],
+          "Theta Obj Act Cum": [
+            30.307801208,
+            9.6846314424,
+            71.4915297044
+          ],
+          "Termination": "max_budget",
+          "Total Run Time": 13.9019346237,
+          "Min Obj GP Cum": 1.0389314387,
+          "Min Obj Act Cum": 0.6384613241,
+          "Acq Obj Act Cum": 0.6300853366
+        }
+      ]
+    }
+  ],
+  "ok": true,
+  "attempts": 1,
+  "wall_sec": 13.92
+}

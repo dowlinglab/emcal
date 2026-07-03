@@ -1,0 +1,313 @@
+{
+  "note": "Name-independent golden reference: best actual objective per config at iters=3,retrain=3,reopt=3,seed=1,nocompile. Survives class/method/column renames.",
+  "metrics": {
+    "cs10_m1": {
+      "best_obj": 232.2363339569,
+      "why_term": "max_budget"
+    },
+    "cs10_m2": {
+      "best_obj": 4.5278485301,
+      "why_term": "max_budget"
+    },
+    "cs10_m3": {
+      "best_obj": 0.0003390547,
+      "why_term": "max_budget"
+    },
+    "cs10_m4": {
+      "best_obj": 0.000338656,
+      "why_term": "max_budget"
+    },
+    "cs10_m5": {
+      "best_obj": 0.0003385464,
+      "why_term": "max_budget"
+    },
+    "cs10_m6": {
+      "best_obj": 0.0003409221,
+      "why_term": "max_budget"
+    },
+    "cs10_m7": {
+      "best_obj": 0.0003384993,
+      "why_term": "max_budget"
+    },
+    "cs11_m1": {
+      "best_obj": 0.2062147931,
+      "why_term": "max_budget"
+    },
+    "cs11_m2": {
+      "best_obj": 1.770443159,
+      "why_term": "max_budget"
+    },
+    "cs11_m3": {
+      "best_obj": 0.114070769,
+      "why_term": "max_budget"
+    },
+    "cs11_m4": {
+      "best_obj": 0.1140840968,
+      "why_term": "max_budget"
+    },
+    "cs11_m5": {
+      "best_obj": 0.1139098746,
+      "why_term": "max_budget"
+    },
+    "cs11_m6": {
+      "best_obj": 0.1139508902,
+      "why_term": "max_budget"
+    },
+    "cs11_m7": {
+      "best_obj": 0.1139029895,
+      "why_term": "max_budget"
+    },
+    "cs12_m1": {
+      "best_obj": 0.1217992959,
+      "why_term": "max_budget"
+    },
+    "cs12_m2": {
+      "best_obj": 0.6384613241,
+      "why_term": "max_budget"
+    },
+    "cs12_m3": {
+      "best_obj": 4.7583762611,
+      "why_term": "max_budget"
+    },
+    "cs12_m4": {
+      "best_obj": 3.713943005,
+      "why_term": "max_budget"
+    },
+    "cs12_m5": {
+      "best_obj": 4.6162780332,
+      "why_term": "max_budget"
+    },
+    "cs12_m6": {
+      "best_obj": 4.6162780332,
+      "why_term": "max_budget"
+    },
+    "cs12_m7": {
+      "best_obj": 26.1806776884,
+      "why_term": "max_budget"
+    },
+    "cs13_m1": {
+      "best_obj": 2.760675211,
+      "why_term": "max_budget"
+    },
+    "cs13_m2": {
+      "best_obj": 0.886751012,
+      "why_term": "max_budget"
+    },
+    "cs13_m3": {
+      "best_obj": 0.0010634028,
+      "why_term": "max_budget"
+    },
+    "cs13_m4": {
+      "best_obj": 0.0020628604,
+      "why_term": "max_budget"
+    },
+    "cs13_m5": {
+      "best_obj": 0.0009248776,
+      "why_term": "max_budget"
+    },
+    "cs13_m6": {
+      "best_obj": 0.0008981294,
+      "why_term": "max_budget"
+    },
+    "cs13_m7": {
+      "best_obj": 0.0003606084,
+      "why_term": "max_budget"
+    },
+    "cs14_m1": {
+      "best_obj": 5.0062077671,
+      "why_term": "max_budget"
+    },
+    "cs14_m2": {
+      "best_obj": 1.0425459767,
+      "why_term": "max_budget"
+    },
+    "cs14_m3": {
+      "best_obj": 0.2603686003,
+      "why_term": "max_budget"
+    },
+    "cs14_m4": {
+      "best_obj": 0.2372149747,
+      "why_term": "max_budget"
+    },
+    "cs14_m5": {
+      "best_obj": 0.0356183993,
+      "why_term": "max_budget"
+    },
+    "cs14_m6": {
+      "best_obj": 0.1450102336,
+      "why_term": "max_budget"
+    },
+    "cs14_m7": {
+      "best_obj": 0.2603686003,
+      "why_term": "max_budget"
+    },
+    "cs15_m1": {
+      "best_obj": 503.8604077976,
+      "why_term": "max_budget"
+    },
+    "cs15_m2": {
+      "best_obj": 4.4095893499,
+      "why_term": "max_budget"
+    },
+    "cs15_m3": {
+      "best_obj": 90.1645922707,
+      "why_term": "max_budget"
+    },
+    "cs15_m4": {
+      "best_obj": 90.1645922707,
+      "why_term": "max_budget"
+    },
+    "cs15_m5": {
+      "best_obj": 0.0193800364,
+      "why_term": "max_budget"
+    },
+    "cs15_m6": {
+      "best_obj": 0.957872063,
+      "why_term": "max_budget"
+    },
+    "cs15_m7": {
+      "best_obj": 90.1645922707,
+      "why_term": "max_budget"
+    },
+    "cs16_m1": {
+      "best_obj": 72270.2037731791,
+      "why_term": "max_budget"
+    },
+    "cs16_m2": {
+      "best_obj": 6.6608752017,
+      "why_term": "max_budget"
+    },
+    "cs16_m3": {
+      "best_obj": 452.0342926387,
+      "why_term": "max_budget"
+    },
+    "cs16_m4": {
+      "best_obj": 229.1555950409,
+      "why_term": "max_budget"
+    },
+    "cs16_m5": {
+      "best_obj": 200.463658675,
+      "why_term": "max_budget"
+    },
+    "cs16_m6": {
+      "best_obj": 368.2184466586,
+      "why_term": "max_budget"
+    },
+    "cs16_m7": {
+      "best_obj": 391.9018650667,
+      "why_term": "max_budget"
+    },
+    "cs17_m1": {
+      "best_obj": 0.1319744021,
+      "why_term": "max_budget"
+    },
+    "cs17_m2": {
+      "best_obj": -1.7367693747,
+      "why_term": "max_budget"
+    },
+    "cs17_m3": {
+      "best_obj": 0.0826066477,
+      "why_term": "max_budget"
+    },
+    "cs17_m4": {
+      "best_obj": 0.0992754237,
+      "why_term": "max_budget"
+    },
+    "cs17_m5": {
+      "best_obj": 0.0963432201,
+      "why_term": "max_budget"
+    },
+    "cs17_m6": {
+      "best_obj": 0.0944765977,
+      "why_term": "max_budget"
+    },
+    "cs17_m7": {
+      "best_obj": 0.661392687,
+      "why_term": "max_budget"
+    },
+    "cs1_m1": {
+      "best_obj": 0.3664014051,
+      "why_term": "max_budget"
+    },
+    "cs1_m2": {
+      "best_obj": -2.4757204242,
+      "why_term": "max_budget"
+    },
+    "cs1_m3": {
+      "best_obj": 12.0973745816,
+      "why_term": "max_budget"
+    },
+    "cs1_m4": {
+      "best_obj": 12.0973745816,
+      "why_term": "max_budget"
+    },
+    "cs1_m5": {
+      "best_obj": 194.7279963893,
+      "why_term": "max_budget"
+    },
+    "cs1_m6": {
+      "best_obj": 0.0010876321,
+      "why_term": "max_budget"
+    },
+    "cs1_m7": {
+      "best_obj": 12.0973745816,
+      "why_term": "max_budget"
+    },
+    "cs2_m1": {
+      "best_obj": 2.0916601644,
+      "why_term": "max_budget"
+    },
+    "cs2_m2": {
+      "best_obj": 0.9602997322,
+      "why_term": "max_budget"
+    },
+    "cs2_m3": {
+      "best_obj": 1.361848163,
+      "why_term": "max_budget"
+    },
+    "cs2_m4": {
+      "best_obj": 0.3806142744,
+      "why_term": "max_budget"
+    },
+    "cs2_m5": {
+      "best_obj": 0.1480273007,
+      "why_term": "max_budget"
+    },
+    "cs2_m6": {
+      "best_obj": 0.6103078398,
+      "why_term": "max_budget"
+    },
+    "cs2_m7": {
+      "best_obj": 0.0535170919,
+      "why_term": "max_budget"
+    },
+    "cs3_m1": {
+      "best_obj": 1.4142242801,
+      "why_term": "max_budget"
+    },
+    "cs3_m2": {
+      "best_obj": -0.2522268423,
+      "why_term": "max_budget"
+    },
+    "cs3_m3": {
+      "best_obj": 1.0443161125,
+      "why_term": "max_budget"
+    },
+    "cs3_m4": {
+      "best_obj": 1.0914842456,
+      "why_term": "max_budget"
+    },
+    "cs3_m5": {
+      "best_obj": 1.2158307947,
+      "why_term": "max_budget"
+    },
+    "cs3_m6": {
+      "best_obj": 1.2158307947,
+      "why_term": "max_budget"
+    },
+    "cs3_m7": {
+      "best_obj": 0.9300084841,
+      "why_term": "max_budget"
+    }
+  }
+}

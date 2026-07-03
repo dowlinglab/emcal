@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=61.0", "versioningit~=2.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "emcal"
-version = "0.0.1"
 description = "Gaussian-process Bayesian optimization for nonlinear model calibration"
+dynamic = ["version"]
 readme = "README.md"
 license = { text = "BSD-3-Clause" }
 requires-python = ">=3.9"
@@ -20,9 +20,74 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 
+# Always-needed core dependencies. NOTE: the GP backend (gpflow + TensorFlow),
+# sparse-grid quadrature (Tasmanian), and the Müller case studies (Pyomo) are heavy
+# and/or have no universal wheels, so they live in optional groups below. Installing
+# and running the full algorithm today requires `[gpflow,sparsegrid]` (plus `[muller]`
+# for the Müller case studies). Making the core importable without these is a later
+# refactor goal (lazy imports).
+dependencies = [
+    "numpy<2",
+    "scipy",
+    "pandas",
+    "scikit-learn",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+# GP backend. Pins reflect the validated stack (see devtools/conda-envs).
+# gpflow 2.9.1 predates TF 2.16's Keras-3 switch, so TF is capped at 2.15 / Keras 2.
+gpflow = [
+    "gpflow==2.9.1",
+    "tensorflow-macos==2.15.0; platform_system == 'Darwin' and platform_machine == 'arm64'",
+    "tensorflow==2.15.*; platform_system != 'Darwin' or platform_machine != 'arm64'",
+    "tensorflow-probability==0.23.0",
+    "keras<2.16",
+    "setuptools<81",  # gpflow 2.9.1 imports pkg_resources at runtime
+]
+# Sparse-grid acquisition (method C2). No universal wheel; may need a source build
+# (see devtools/conda-envs/gpbo-dev-SETUP.md).
+sparsegrid = ["Tasmanian"]
+# Müller case studies (CS2/CS3) solve a Pyomo NLP and need an ipopt solver on PATH.
+muller = ["Pyomo"]
+# Results analysis & plotting. Currently signac-coupled (to be decoupled in a later phase).
+analysis = ["signac", "pygad"]
+# Development / testing.
+dev = [
+    "pytest>=6.1.2",
+    "pytest-cov",
+]
+
 [project.urls]
 Homepage = "https://github.com/DowlingLab/emcal"
 Repository = "https://github.com/DowlingLab/emcal"
 
+[tool.setuptools]
+zip-safe = false
+include-package-data = false
+
 [tool.setuptools.packages.find]
+namespaces = false
 where = ["src"]
+
+[tool.versioningit]
+default-version = "0.0.0+unknown"
+
+[tool.versioningit.format]
+distance = "{base_version}+{distance}.{vcs}{rev}"
+dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+
+[tool.versioningit.vcs]
+method = "git"
+match = ["v*"]
+default-tag = "0.0.0"
+
+[tool.versioningit.write]
+file = "src/emcal/_version.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: end-to-end tests that build/train GPs (deselect with '-m \"not slow\"')",
+]

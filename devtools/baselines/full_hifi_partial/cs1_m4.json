@@ -1,0 +1,141 @@
+{
+  "cs_val": 1,
+  "cs_name": "Simple Linear",
+  "method_val": 4,
+  "method": "B2",
+  "emulator": true,
+  "num_x_data": 5,
+  "iters": 3,
+  "runs": 1,
+  "runs_out": [
+    {
+      "run": 0,
+      "why_term": "max_budget",
+      "results_df": [
+        {
+          "BO Iter": 1,
+          "Best Error": 5.3375229991,
+          "Exploration Bias": 1.0,
+          "Theta Opt Acq": [
+            -1.8909904903,
+            -1.6015911944
+          ],
+          "Opt Acq": 1.1268838499,
+          "Acq Obj Act": 78.9471326869,
+          "MSE Acq Act": 15.7894265374,
+          "Theta Min Obj": [
+            -1.1536566686,
+            -1.9772893161
+          ],
+          "Min Obj GP": 38.8488437198,
+          "Min Obj Act": 78.9471326869,
+          "MSE Obj GP": 7.769768744,
+          "MSE Obj Act": 15.7894265374,
+          "Time/Iter": 27.2143771648,
+          "BO Method": "Log Independence",
+          "Max Evals": 3,
+          "Theta Acq Act Cum": [
+            -1.8909904903,
+            -1.6015911944
+          ],
+          "Theta Obj GP Cum": [
+            -1.1536566686,
+            -1.9772893161
+          ],
+          "Theta Obj Act Cum": [
+            -1.1536566686,
+            -1.9772893161
+          ],
+          "Termination": "max_budget",
+          "Total Run Time": 100.9163939953,
+          "Min Obj GP Cum": 38.8488437198,
+          "Min Obj Act Cum": 78.9471326869,
+          "Acq Obj Act Cum": 78.9471326869
+        },
+        {
+          "BO Iter": 2,
+          "Best Error": 5.3375229991,
+          "Exploration Bias": 1.0,
+          "Theta Opt Acq": [
+            -0.0137150959,
+            0.0244869448
+          ],
+          "Opt Acq": 1.1331022608,
+          "Acq Obj Act": 22.0435282637,
+          "MSE Acq Act": 4.4087056527,
+          "Theta Min Obj": [
+            0.0065763895,
+            -0.3979911945
+          ],
+          "Min Obj GP": 40.0291003088,
+          "Min Obj Act": 22.0435282637,
+          "MSE Obj GP": 8.0058200618,
+          "MSE Obj Act": 4.4087056527,
+          "Time/Iter": 48.2100248337,
+          "BO Method": "Log Independence",
+          "Max Evals": 3,
+          "Theta Acq Act Cum": [
+            -0.0137150959,
+            0.0244869448
+          ],
+          "Theta Obj GP Cum": [
+            -1.1536566686,
+            -1.9772893161
+          ],
+          "Theta Obj Act Cum": [
+            0.0065763895,
+            -0.3979911945
+          ],
+          "Termination": "max_budget",
+          "Total Run Time": 100.9163939953,
+          "Min Obj GP Cum": 38.8488437198,
+          "Min Obj Act Cum": 22.0435282637,
+          "Acq Obj Act Cum": 22.0435282637
+        },
+        {
+          "BO Iter": 3,
+          "Best Error": 5.3375229991,
+          "Exploration Bias": 1.0,
+          "Theta Opt Acq": [
+            0.919754795,
+            1.5138061673
+          ],
+          "Opt Acq": 0.4453485918,
+          "Acq Obj Act": 82.3473666902,
+          "MSE Acq Act": 16.469473338,
+          "Theta Min Obj": [
+            -1.76472818,
+            -1.4181299985
+          ],
+          "Min Obj GP": 241.8744034843,
+          "Min Obj Act": 82.3473666902,
+          "MSE Obj GP": 48.3748806969,
+          "MSE Obj Act": 16.469473338,
+          "Time/Iter": 25.4919919968,
+          "BO Method": "Log Independence",
+          "Max Evals": 3,
+          "Theta Acq Act Cum": [
+            -0.0137150959,
+            0.0244869448
+          ],
+          "Theta Obj GP Cum": [
+            -1.1536566686,
+            -1.9772893161
+          ],
+          "Theta Obj Act Cum": [
+            0.0065763895,
+            -0.3979911945
+          ],
+          "Termination": "max_budget",
+          "Total Run Time": 100.9163939953,
+          "Min Obj GP Cum": 38.8488437198,
+          "Min Obj Act Cum": 22.0435282637,
+          "Acq Obj Act Cum": 22.0435282637
+        }
+      ]
+    }
+  ],
+  "ok": true,
+  "attempts": 1,
+  "wall_sec": 100.93
+}

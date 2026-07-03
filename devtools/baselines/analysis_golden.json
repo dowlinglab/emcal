@@ -1,0 +1,383 @@
+{
+  "get_run_dataframe": {
+    "ok": true,
+    "fp": [
+      {
+        "kind": "df",
+        "shape": [
+          3,
+          28
+        ],
+        "columns": [
+          "Acq Obj Act",
+          "Acq Obj Act Cum",
+          "BO Iter",
+          "BO Method",
+          "Best Error",
+          "CS Name",
+          "CS Name Val",
+          "EP Method Val",
+          "Exploration Bias",
+          "Job ID",
+          "MSE Acq Act",
+          "MSE Obj Act",
+          "MSE Obj GP",
+          "Max Evals",
+          "Min Obj Act",
+          "Min Obj Act Cum",
+          "Min Obj GP",
+          "Min Obj GP Cum",
+          "Opt Acq",
+          "Run Number",
+          "Termination",
+          "Theta Acq Act Cum",
+          "Theta Min Obj",
+          "Theta Obj Act Cum",
+          "Theta Obj GP Cum",
+          "Theta Opt Acq",
+          "Time/Iter",
+          "Total Run Time"
+        ],
+        "nansum": 107844.283452
+      },
+      [
+        {
+          "kind": "dict",
+          "keys": [
+            "theta_1",
+            "theta_2"
+          ]
+        },
+        {
+          "kind": "ndarray",
+          "shape": [
+            2,
+            2
+          ],
+          "nansum": 0.0
+        }
+      ]
+    ]
+  },
+  "best_error": {
+    "ok": true,
+    "fp": [
+      {
+        "kind": "ndarray",
+        "shape": [
+          1
+        ],
+        "nansum": 5.337523
+      },
+      {
+        "kind": "ndarray",
+        "shape": [
+          1,
+          2
+        ],
+        "nansum": 0.284569
+      }
+    ]
+  },
+  "hyperparameter_trajectories": {
+    "ok": true,
+    "fp": [
+      {
+        "kind": "ndarray",
+        "shape": [
+          1,
+          3,
+          5
+        ],
+        "nansum": 1015.717232
+      },
+      {
+        "kind": "list",
+        "len": 5,
+        "fp": [
+          {
+            "kind": "str"
+          },
+          {
+            "kind": "str"
+          },
+          {
+            "kind": "str"
+          }
+        ]
+      },
+      {
+        "kind": "NoneType"
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "bo_iter_tot",
+          "bo_run_num",
+          "bo_run_tot",
+          "bo_runs_in_job",
+          "cs_name_val",
+          "ei_tol",
+          "ep0",
+          "ep_enum_val",
+          "gen_heat_map_data",
+          "gen_meth_theta",
+          "kernel_enum_val",
+          "lenscl",
+          "meth_name_val",
+          "normalize",
+          "obj_tol",
+          "outputscl",
+          "reoptimize_obj",
+          "retrain_GP",
+          "seed",
+          "sep_fact",
+          "w_noise"
+        ]
+      }
+    ]
+  },
+  "objective_trajectories": {
+    "ok": false,
+    "error": "AttributeError: 'NoneType' object has no attribute 'find_jobs'"
+  },
+  "parameter_trajectories": {
+    "ok": true,
+    "fp": [
+      {
+        "kind": "ndarray",
+        "shape": [
+          1,
+          3,
+          2
+        ],
+        "nansum": -3.798583
+      },
+      {
+        "kind": "list",
+        "len": 2,
+        "fp": [
+          {
+            "kind": "str"
+          },
+          {
+            "kind": "str"
+          }
+        ]
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "theta_1",
+          "theta_2"
+        ]
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "bo_iter_tot",
+          "bo_run_num",
+          "bo_run_tot",
+          "bo_runs_in_job",
+          "cs_name_val",
+          "ei_tol",
+          "ep0",
+          "ep_enum_val",
+          "gen_heat_map_data",
+          "gen_meth_theta",
+          "kernel_enum_val",
+          "lenscl",
+          "meth_name_val",
+          "normalize",
+          "obj_tol",
+          "outputscl",
+          "reoptimize_obj",
+          "retrain_GP",
+          "seed",
+          "sep_fact",
+          "w_noise"
+        ]
+      }
+    ]
+  },
+  "gp_parity_data": {
+    "ok": true,
+    "fp": {
+      "kind": "Data",
+      "fields": {
+        "theta_vals": 1.860081,
+        "x_vals": 0.0,
+        "y_vals": 3.382366,
+        "gp_mean": -1e-06,
+        "gp_var": 1879.01211,
+        "gp_covar": 1879.013186,
+        "sse": null,
+        "sse_var": null,
+        "sse_covar": null,
+        "acq": null
+      }
+    }
+  },
+  "gp_heat_map_data": {
+    "ok": true,
+    "fp": [
+      {
+        "kind": "list",
+        "len": 4,
+        "fp": [
+          {
+            "kind": "ndarray",
+            "shape": [
+              20,
+              20
+            ],
+            "nansum": 43448.950304
+          },
+          {
+            "kind": "ndarray",
+            "shape": [
+              20,
+              20
+            ],
+            "nansum": 96749.762268
+          },
+          {
+            "kind": "ndarray",
+            "shape": [
+              20,
+              20
+            ],
+            "nansum": 20192616.31656
+          }
+        ]
+      },
+      {
+        "kind": "ndarray",
+        "shape": [
+          2,
+          20,
+          20
+        ],
+        "nansum": -0.0
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "idcs",
+          "min_sse",
+          "names",
+          "opt_acq",
+          "train",
+          "true"
+        ]
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "bo_iter_tot",
+          "bo_run_num",
+          "bo_run_tot",
+          "bo_runs_in_job",
+          "cs_name_val",
+          "ei_tol",
+          "ep0",
+          "ep_enum_val",
+          "gen_heat_map_data",
+          "gen_meth_theta",
+          "kernel_enum_val",
+          "lenscl",
+          "meth_name_val",
+          "normalize",
+          "obj_tol",
+          "outputscl",
+          "reoptimize_obj",
+          "retrain_GP",
+          "seed",
+          "sep_fact",
+          "w_noise"
+        ]
+      }
+    ]
+  },
+  "gp_heat_map_data_ei": {
+    "ok": true,
+    "fp": [
+      {
+        "kind": "list",
+        "len": 4,
+        "fp": [
+          {
+            "kind": "ndarray",
+            "shape": [
+              20,
+              20
+            ],
+            "nansum": 43448.950304
+          },
+          {
+            "kind": "ndarray",
+            "shape": [
+              20,
+              20
+            ],
+            "nansum": 96749.762268
+          },
+          {
+            "kind": "ndarray",
+            "shape": [
+              20,
+              20
+            ],
+            "nansum": 20192616.31656
+          }
+        ]
+      },
+      {
+        "kind": "ndarray",
+        "shape": [
+          2,
+          20,
+          20
+        ],
+        "nansum": -0.0
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "idcs",
+          "min_sse",
+          "names",
+          "opt_acq",
+          "train",
+          "true"
+        ]
+      },
+      {
+        "kind": "dict",
+        "keys": [
+          "bo_iter_tot",
+          "bo_run_num",
+          "bo_run_tot",
+          "bo_runs_in_job",
+          "cs_name_val",
+          "ei_tol",
+          "ep0",
+          "ep_enum_val",
+          "gen_heat_map_data",
+          "gen_meth_theta",
+          "kernel_enum_val",
+          "lenscl",
+          "meth_name_val",
+          "normalize",
+          "obj_tol",
+          "outputscl",
+          "reoptimize_obj",
+          "retrain_GP",
+          "seed",
+          "sep_fact",
+          "w_noise"
+        ]
+      }
+    ]
+  }
+}

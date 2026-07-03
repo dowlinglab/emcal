@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "iters": 3,
+    "runs": 1,
+    "methods": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "cs_list": [
+      2,
+      3,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "patch": "nocompile",
+    "retries": 3,
+    "sim_seed": 1,
+    "run_seed": 1
+  },
+  "summary": [
+    {
+      "cs_val": 2,
+      "method_val": 1,
+      "ok": true,
+      "attempts": 1,
+      "wall_sec": 284.65,
+      "best_sse": 2.6808229923,
+      "skipped": true,
+      "why_term": "max_budget"
+    },
+    {
+      "cs_val": 2,
+      "method_val": 2,
+      "ok": true,
+      "attempts": 1,
+      "wall_sec": 127.62,
+      "best_sse": 0.9820535023,
+      "skipped": true,
+      "why_term": "max_budget"
+    },
+    {
+      "cs_val": 2,
+      "method_val": 3,
+      "ok": true,
+      "attempts": 1,
+      "wall_sec": 1650.81,
+      "best_sse": 1.3654697294,
+      "why_term": "max_budget"
+    },
+    {
+      "cs_val": 2,
+      "method_val": 4,
+      "ok": true,
+      "attempts": 1,
+      "wall_sec": 6526.61,
+      "best_sse": 0.3806472238,
+      "why_term": "max_budget"
+    }
+  ]
+}

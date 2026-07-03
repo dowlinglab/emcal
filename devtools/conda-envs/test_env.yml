@@ -1,0 +1,23 @@
+name: tests
+channels:
+  - conda-forge
+  - defaults
+  - pytorch
+dependencies:
+    # Base depends
+  - python
+  - pip
+  - numpy
+  - pandas
+  - scikit-learn
+  - pytorch
+  - torchvision
+    # Testing
+  - pytest
+  - pytest-cov
+  - codecov
+  - gpytorch
+
+  # Pip-only installs
+  #- pip:
+  #  - Tasmanian
