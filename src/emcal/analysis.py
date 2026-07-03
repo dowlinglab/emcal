@@ -1368,8 +1368,11 @@ class General_Analysis:
                     heat_map_sse_data.sse_var
                 )
             elif method.is_emulator == False:
+                # Reuses `hm_prediction` instead of re-reading data.gp_mean/data.gp_covar
+                # (heat_map_sse_data.gp_mean/gp_covar above were set from that same prediction).
                 heat_map_sse_data.acq = gp_emulator.expected_improvement(
-                    data=heat_map_sse_data, exp_data=exp_data, ep_bias=ep_bias, best_error_metrics=best_error_metrics
+                    data=heat_map_sse_data, exp_data=exp_data, ep_bias=ep_bias,
+                    best_error_metrics=best_error_metrics, gp_prediction=hm_prediction,
                 )[0]
             # In older data, sparse grid depth is not a set parameter. Therefore, we set the number of points to 2000
             # This will be irrelevant for non-MC and SG data anyway
@@ -1417,9 +1420,11 @@ class General_Analysis:
                     cand_sse_mean, cand_sse_var = gp_emulator.predict_sse(
                         target="cand", method=method, exp_data=exp_data, prediction=cand_pred
                     )
-                    # Otherwise objective is ei
+                    # Otherwise objective is ei. Reuses `cand_pred` instead of re-reading
+                    # data.gp_mean/data.gp_covar off gp_emulator.cand_data.
                     ei_output = gp_emulator.expected_improvement(
-                        target="cand", exp_data=exp_data, ep_bias=ep_bias, best_error_metrics=best_error_metrics, method=method, sg_mc_samples=sg_mc_samples
+                        target="cand", exp_data=exp_data, ep_bias=ep_bias, best_error_metrics=best_error_metrics,
+                        method=method, sg_mc_samples=sg_mc_samples, gp_prediction=cand_pred,
                     )[0]
                     ei_vals.append(ei_output)
 

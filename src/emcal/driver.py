@@ -295,11 +295,12 @@ class GPBODriver:
         )
 
         # Note - Use Sparse grid EI for approximations
-        # Evaluate EI using Sparse Grid or EI (This is relatively quick)
+        # Evaluate EI using Sparse Grid or EI (This is relatively quick). Reuses `pred`
+        # instead of re-reading data.gp_mean/data.gp_covar.
         method_3 = GPBOMethod(MethodName(3))
         sp_data_ei, iter_max_ei_terms = self.gp_emulator.expected_improvement(
             data=sp_data, exp_data=self.exp_data, ep_bias=self.ep_bias,
-            best_error_metrics=best_error_metrics, method=method_3
+            best_error_metrics=best_error_metrics, method=method_3, gp_prediction=pred
         )
 
         ##Sort by min(-ei)
@@ -497,11 +498,12 @@ class GPBODriver:
                 # Objective to minimize is E[sse] for EXPECTED_SSE (A3)
                 obj = cand_sse_mean + np.sum(cand_sse_var)
             else:
-                # Otherwise objective is ei
+                # Otherwise objective is ei. Reuses `pred` instead of re-reading
+                # data.gp_mean/data.gp_covar off gp_emulator.cand_data.
                 if self.method.is_emulator == False:
                     ei_output = self.gp_emulator.expected_improvement(
                         target="cand", exp_data=self.exp_data, ep_bias=self.ep_bias,
-                        best_error_metrics=best_error_metrics
+                        best_error_metrics=best_error_metrics, gp_prediction=pred
                     )
                 else:
                     ei_output = self.gp_emulator.expected_improvement(
@@ -511,6 +513,7 @@ class GPBODriver:
                         best_error_metrics=best_error_metrics,
                         method=self.method,
                         sg_mc_samples=self.sg_mc_samples,
+                        gp_prediction=pred,
                     )
                 obj = -1 * ei_output[0]
 

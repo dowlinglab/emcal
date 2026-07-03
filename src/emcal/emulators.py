@@ -1095,7 +1095,7 @@ class ObjectiveGP(GPEmulator):
 
         return best_error, be_theta, train_idc
 
-    def __eval_gp_ei(self, sim_data, exp_data, ep_bias, best_error_metrics):
+    def __eval_gp_ei(self, sim_data, exp_data, ep_bias, best_error_metrics, gp_prediction=None):
         """
         Evaluates gp acquisition function. In this case, ei
 
@@ -1109,6 +1109,12 @@ class ObjectiveGP(GPEmulator):
             The exploration bias class
         best_error_metrics: tuple(float, np.ndarray, np.ndarray)
             The best error, best error parameter set, and best_error_x values of the method. Hint use calc_best_error()
+        gp_prediction: GPPrediction or None, default None
+            If given, its .mean/.covariance are used instead of reading sim_data.gp_mean/
+            sim_data.gp_covar (avoids re-deriving an already-computed prediction). .covariance
+            is always used regardless of the covar flag predict() was called with -- it
+            computes the full covariance unconditionally. If None, falls back to the
+            sim_data.gp_* read (transitional).
 
         Returns
         -------
@@ -1121,11 +1127,13 @@ class ObjectiveGP(GPEmulator):
         -----
         This function also sets sim_data.acq to the expected improvement
         """
+        gp_mean = gp_prediction.mean if gp_prediction is not None else sim_data.gp_mean
+        gp_covar = gp_prediction.covariance if gp_prediction is not None else sim_data.gp_covar
         # Call instance of expected improvement class
         ei_class = ExpectedImprovement(
             ep_bias,
-            sim_data.gp_mean,
-            sim_data.gp_covar,
+            gp_mean,
+            gp_covar,
             exp_data,
             best_error_metrics,
             self.seed,
@@ -1139,13 +1147,20 @@ class ObjectiveGP(GPEmulator):
         return ei, ei_terms_df
 
     def expected_improvement(self, target=None, data=None, exp_data=None, ep_bias=None,
-                             best_error_metrics=None):
+                             best_error_metrics=None, gp_prediction=None):
         """
         Expected-improvement acquisition for the standard/objective GP.
 
         Collapses the former eval_ei_{test,val,cand,misc}. Choose a built-in `target`
         ("test"/"val"/"cand") or pass an arbitrary `data`. `best_error_metrics` is the
         (best_error, best_theta, best_error_x) tuple from calc_best_error().
+
+        Parameters
+        ----------
+        gp_prediction: GPPrediction or None, default None
+            The GPPrediction returned by a prior predict() call on the same data, reused
+            instead of re-reading data.gp_mean/data.gp_covar. Optional and purely additive --
+            omitting it preserves the current data.gp_* read.
 
         Returns
         -------
@@ -1170,7 +1185,7 @@ class ObjectiveGP(GPEmulator):
             isinstance(best_error_metrics, tuple) and len(best_error_metrics) == 3
         ), "Error metric must be a tuple of length 3"
 
-        return self.__eval_gp_ei(data, exp_data, ep_bias, best_error_metrics)
+        return self.__eval_gp_ei(data, exp_data, ep_bias, best_error_metrics, gp_prediction=gp_prediction)
 
     def append_training_point(self, theta_best_sse_data):
         """
@@ -1749,6 +1764,7 @@ class EmulatorGP(GPEmulator):
         best_error_metrics,
         method,
         sg_mc_samples=2000,
+        gp_prediction=None,
     ):
         """
         Evaluates the (EI) acquisition function for a given data set
@@ -1766,6 +1782,12 @@ class EmulatorGP(GPEmulator):
             Method for GP Emulation
         sg_mc_samples: int, default 2000
             Number of samples to use for the Tasmanian sparse grid or Monte Carlo approaches
+        gp_prediction: GPPrediction or None, default None
+            If given, its .mean/.covariance are used instead of reading sim_data.gp_mean/
+            sim_data.gp_covar (avoids re-deriving an already-computed prediction). .covariance
+            is always used regardless of the covar flag predict() was called with -- it
+            computes the full covariance unconditionally. If None, falls back to the
+            sim_data.gp_* read (transitional).
 
         Returns
         -------
@@ -1791,11 +1813,13 @@ class EmulatorGP(GPEmulator):
             assert (
                 isinstance(sg_mc_samples, int) and sg_mc_samples > 0
             ), "sg_mc_samples must be positive int for sparse grid and Monte Carlo methods"
+        gp_mean = gp_prediction.mean if gp_prediction is not None else sim_data.gp_mean
+        gp_covar = gp_prediction.covariance if gp_prediction is not None else sim_data.gp_covar
         # Call instance of expected improvement class
         ei_class = ExpectedImprovement(
             ep_bias,
-            sim_data.gp_mean,
-            sim_data.gp_covar,
+            gp_mean,
+            gp_covar,
             exp_data,
             best_error_metrics,
             self.seed,
@@ -1810,7 +1834,8 @@ class EmulatorGP(GPEmulator):
         return ei, ei_terms_df
 
     def expected_improvement(self, target=None, data=None, exp_data=None, ep_bias=None,
-                             best_error_metrics=None, method=None, sg_mc_samples=2000):
+                             best_error_metrics=None, method=None, sg_mc_samples=2000,
+                             gp_prediction=None):
         """
         Expected-improvement acquisition for the emulator GP.
 
@@ -1819,6 +1844,13 @@ class EmulatorGP(GPEmulator):
         and experimental `exp_data`; `sg_mc_samples` sets the sparse-grid / Monte-Carlo
         sample count. `best_error_metrics` is the (best_error, best_theta, best_error_x)
         tuple from calc_best_error().
+
+        Parameters
+        ----------
+        gp_prediction: GPPrediction or None, default None
+            The GPPrediction returned by a prior predict() call on the same data, reused
+            instead of re-reading data.gp_mean/data.gp_covar. Optional and purely additive --
+            omitting it preserves the current data.gp_* read.
 
         Returns
         -------
@@ -1861,7 +1893,8 @@ class EmulatorGP(GPEmulator):
                 )
 
         return self.__eval_gp_ei(
-            data, exp_data, ep_bias, best_error_metrics, method, sg_mc_samples
+            data, exp_data, ep_bias, best_error_metrics, method, sg_mc_samples,
+            gp_prediction=gp_prediction,
         )
 
     def append_training_point(self, theta_best_data):
