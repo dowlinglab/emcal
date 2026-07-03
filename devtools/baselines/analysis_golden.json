@@ -379,5 +379,35 @@
         ]
       }
     ]
+  },
+  "plot_hyperparameters": {
+    "ok": true,
+    "fp": {
+      "kind": "figure",
+      "n_axes": 6,
+      "n_lines": 5,
+      "n_collections": 0,
+      "n_patches": 0
+    }
+  },
+  "plot_parameters": {
+    "ok": true,
+    "fp": {
+      "kind": "figure",
+      "n_axes": 2,
+      "n_lines": 4,
+      "n_collections": 0,
+      "n_patches": 0
+    }
+  },
+  "plot_gp_fit": {
+    "ok": true,
+    "fp": {
+      "kind": "figure",
+      "n_axes": 4,
+      "n_lines": 0,
+      "n_collections": 16,
+      "n_patches": 0
+    }
   }
 }

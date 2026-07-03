@@ -21,6 +21,8 @@ import argparse
 import warnings
 
 warnings.simplefilter("ignore")
+import matplotlib
+matplotlib.use("Agg")  # headless: must be set before any pyplot import (incl. via emcal.plotting)
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -69,7 +71,36 @@ def _fingerprint(obj):
                 "fields": {f: _ns(getattr(obj, f, None)) for f in
                            ("theta_vals", "x_vals", "y_vals", "gp_mean", "gp_var",
                             "gp_covar", "sse", "sse_var", "sse_covar", "acq")}}
+    if obj.__class__.__name__ == "Figure" and obj.__class__.__module__.startswith("matplotlib"):
+        # Structural fingerprint (axes/lines/collections/patches counts), not pixel data --
+        # stable across matplotlib versions/backends while still catching a plot silently
+        # rendering nothing (or a REMOVE-analyzer branch quietly changing what's drawn).
+        return {"kind": "figure", "n_axes": len(obj.axes),
+                "n_lines": sum(len(ax.lines) for ax in obj.axes),
+                "n_collections": sum(len(ax.collections) for ax in obj.axes),
+                "n_patches": sum(len(ax.patches) for ax in obj.axes)}
     return {"kind": type(obj).__name__}
+
+
+def _capture_shown_figure(plot_fn):
+    """Call a Plotters method that ends in plt.show()/plt.close() (save_figs=False path) and
+    return the Figure it produced, captured just before it would be closed."""
+    import matplotlib.pyplot as plt
+    captured = {}
+    orig_close = plt.close
+
+    def _capture(*a, **kw):
+        captured["fig"] = plt.gcf()
+
+    plt.close = _capture
+    try:
+        plot_fn()
+    finally:
+        plt.close = orig_close
+    fig = captured.get("fig")
+    if fig is not None:
+        orig_close(fig)
+    return fig
 
 
 def build_fixture():
@@ -117,9 +148,30 @@ def build_fixture():
 
 def run_analysis(ws):
     from emcal.analysis import JobContext, General_Analysis
+    from emcal.plotting import Plotters
     jc = JobContext(ws, json.load(open(os.path.join(ws, "signac_statepoint.json"))), job_id="fix")
     ga = General_Analysis({"cs_name_val": 1, "meth_name_val": 7}, project=None,
                           mode="act", save_csv=False)
+    # save_figs=False so these exercise only the show/close (per-job) path -- the save_figs=True
+    # branch of plot_gp_fit calls the REMOVE-slated make_dir_name_from_criteria for path-naming
+    # and is not part of what this guard is meant to protect going into the 7B trim.
+    plotter = Plotters(ga, save_figs=False)
+    # Plotters.plot_parameters -> parameter_trajectories -> __preprocess_analyze reads
+    # sp_data["num_theta_multiplier"] (num_train_points = num_theta_multiplier * num_params),
+    # a key the 8 existing checks' fixture never needed. That method reads the statepoint from
+    # the workspace FILE (job.fn("signac_statepoint.json")), not from job.sp, so the augmented
+    # key needs its own workspace dir (symlinked to the same result files) rather than a second
+    # JobContext over the same `ws` -- this keeps the original statepoint file, and therefore
+    # the 8 existing checks' fingerprints (which embed sp_data's key SET), byte-for-byte
+    # unchanged. CS1 has 2 params and the fixture's simd above used 20 theta points -> 10.
+    ws_plot_params = tempfile.mkdtemp(prefix="gpbo_analysis_fix_plotparams_")
+    for fname in ("BO_Results.gz", "BO_Results_GPs.gz"):
+        os.symlink(os.path.join(ws, fname), os.path.join(ws_plot_params, fname))
+    sp_for_plot_params = dict(jc.sp)
+    sp_for_plot_params["num_theta_multiplier"] = 10
+    with open(os.path.join(ws_plot_params, "signac_statepoint.json"), "w") as f:
+        json.dump(sp_for_plot_params, f)
+    jc_plot_params = JobContext(ws_plot_params, sp_for_plot_params, job_id="fix_plot")
     out = {}
     # parameter_trajectories / hyperparameter_trajectories exercise the per-run column readers signac-free (the columns
     # they read must stay consistent with get_run_dataframe's df across renames). objective_trajectories
@@ -142,6 +194,17 @@ def run_analysis(ws):
         # GPPrediction rewrite (design Q3, C). Deterministic: they use the SAVED trained GP.
         "gp_heat_map_data": lambda: ga.gp_heat_map_data(jc, 1, 1, 0),
         "gp_heat_map_data_ei": lambda: ga.gp_heat_map_data(jc, 1, 1, 0, get_ei=True),
+        # Plotting smoke checks (7B guard): these are the KEEP (per-job) Plotters entry points
+        # that will survive the analysis.py/plotting.py trim. They had zero test coverage before
+        # this, so this pins their structure (axes/lines/collections counts) ahead of the trim --
+        # a regression here would otherwise only surface as a silent blank/broken plot.
+        "plot_hyperparameters": lambda: _capture_shown_figure(lambda: plotter.plot_hyperparameters(jc)),
+        "plot_parameters": lambda: _capture_shown_figure(
+            lambda: plotter.plot_parameters(jc_plot_params, "min_sse")
+        ),
+        "plot_gp_fit": lambda: _capture_shown_figure(
+            lambda: plotter.plot_gp_fit(jc, 1, 1, 0, ["sse_sim", "sse_mean"])
+        ),
     }
     for name, fn in checks.items():
         try:
