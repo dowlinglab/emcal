@@ -11,6 +11,7 @@ license = { text = "BSD-3-Clause" }
 requires-python = ">=3.9"
 authors = [
     { name = "Alexander Dowling", email = "adowling@nd.edu" },
+    { name = "Montana Carlozo", email = "mcarlozo@nd.edu" },
 ]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
