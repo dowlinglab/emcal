@@ -18,4 +18,4 @@ pip install emcal
 
 ## License
 
-MIT
+BSD-3-Clause
