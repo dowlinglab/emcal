@@ -52,11 +52,11 @@ def main():
     df, (theta_true, _bnds) = analyzer.get_run_dataframe(jc)
     print("True parameters:", theta_true)
     print("Tabulated results (tail):")
-    print(df[["BO Iter", "Min Obj Act Cum", "Theta Obj Act Cum"]].tail().to_string(index=False))
+    print(df[["bo_iter", "best_sse_actual", "theta_best_actual"]].tail().to_string(index=False))
 
     # 4. Plot best-SSE-so-far vs BO iteration.
     fig, ax = plt.subplots()
-    ax.plot(df["BO Iter"], df["Min Obj Act Cum"], marker="o")
+    ax.plot(df["bo_iter"], df["best_sse_actual"], marker="o")
     ax.set_xlabel("BO iteration")
     ax.set_ylabel("Best SSE so far")
     ax.set_yscale("log")

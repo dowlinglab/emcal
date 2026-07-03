@@ -66,8 +66,8 @@ def main():
     # --- 5. Inspect the best-fit parameters (there is no "true" answer to compare against).
     final = results_simple[0].results_df.tail(1)
     print(f"Real calibration of '{problem.name}' ({len(x_measured)} measured points).")
-    print(f"  best SSE to data = {final['Min Obj Act Cum'].iloc[0]:.6g}")
-    print(f"  best-fit parameters = {final['Theta Obj Act Cum'].iloc[0]}  (names: {problem.param_names})")
+    print(f"  best SSE to data = {final['best_sse_actual'].iloc[0]:.6g}")
+    print(f"  best-fit parameters = {final['theta_best_actual'].iloc[0]}  (names: {problem.param_names})")
     return results_simple, results_gp
 
 

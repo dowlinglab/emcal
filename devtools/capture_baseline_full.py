@@ -90,7 +90,7 @@ def build_and_run(cs_val, meth_val, iters, runs, retrain_gp=25, reopt_obj=25):
 
 def final_best(rec):
     try:
-        return float(rec["runs_out"][0]["results_df"][-1].get("Min Obj Act Cum"))
+        return float(rec["runs_out"][0]["results_df"][-1].get("best_sse_actual"))
     except Exception:
         return None
 

@@ -31,7 +31,7 @@ def test_simple_linear_bo_completes():
     res_simple, res_gp = driver.run(job=None)
 
     assert len(res_simple) == 1
-    best = float(res_simple[0].results_df.tail(1)["Min Obj Act Cum"].iloc[0])
+    best = float(res_simple[0].results_df.tail(1)["best_sse_actual"].iloc[0])
     assert np.isfinite(best)
     # CS1/m7 is deterministic (compile=False); this is the committed golden value.
     assert best == pytest.approx(12.0973745816, abs=1e-6)
@@ -63,5 +63,5 @@ def test_real_calibration_runs_end_to_end():
                    bo_iter_tot=5, bo_run_tot=1, get_y_sse=True)
     res_simple, _ = GPBODriver(cfg, method, sim, exp, simd, ssed,
                                None, None, None, ep, GenMethod.LHS).run(job=None)
-    best = float(res_simple[0].results_df.tail(1)["Min Obj Act Cum"].iloc[0])
+    best = float(res_simple[0].results_df.tail(1)["best_sse_actual"].iloc[0])
     assert np.isfinite(best) and best >= 0.0

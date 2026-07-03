@@ -933,21 +933,21 @@ class GPBODriver:
 
         # Create Results Pandas DataFrame for 1 iter
         column_names = [
-            "Best Error",
-            "Exploration Bias",
-            "Theta Opt Acq",
-            "Opt Acq",
-            "Acq Obj Act",
-            "MSE Acq Act",
-            "Theta Min Obj",
-            "Min Obj GP",
-            "Min Obj Act",
-            "MSE Obj GP",
-            "MSE Obj Act",
-            "Time/Iter",
+            "best_error",
+            "alpha",
+            "theta_at_acq",
+            "acq_value",
+            "sse_at_acq",
+            "mse_at_acq",
+            "theta_at_min",
+            "sse_gp",
+            "sse_actual",
+            "mse_gp",
+            "mse_actual",
+            "time_per_iter",
         ]
         num_exp_x = self.exp_data.n_x
-        # Return SSE and not log(SSE) for 'Min Obj', 'Min Obj Act', 'Min Obj GP' when calculating MSE
+        # Return SSE and not log(SSE) for 'Min Obj', 'sse_actual', 'sse_gp' when calculating MSE
         MSE_acq_obj_act = (
             np.exp(opt_acq_sim) / num_exp_x
             if self.method.log_scaled
@@ -1018,18 +1018,18 @@ class GPBODriver:
         ), "self.bo_iter_term_frac must be between 0 and 1"
         # Initialize pandas dataframes
         column_names = [
-            "Best Error",
-            "Exploration Bias",
-            "Theta Opt Acq",
-            "Opt Acq",
-            "Acq Obj Act",
-            "MSE Acq Act",
-            "Theta Min Obj",
-            "Min Obj GP",
-            "Min Obj Act",
-            "MSE Obj GP",
-            "MSE Obj Act",
-            "Time/Iter",
+            "best_error",
+            "alpha",
+            "theta_at_acq",
+            "acq_value",
+            "sse_at_acq",
+            "mse_at_acq",
+            "theta_at_min",
+            "sse_gp",
+            "sse_actual",
+            "mse_gp",
+            "mse_actual",
+            "time_per_iter",
         ]
 
         results_df = pd.DataFrame(columns=column_names)
@@ -1046,7 +1046,7 @@ class GPBODriver:
         #Check for files in job for gpbo_res_simple and gpbo_res_GP
         if cond1 and cond2 and cond3:
             results_df = self.gpbo_res_simple[run_num].results_df
-            self.ep_bias.ep_curr = self.gpbo_res_simple[run_num].results_df["Exploration Bias"].iloc[-1]
+            self.ep_bias.ep_curr = self.gpbo_res_simple[run_num].results_df["alpha"].iloc[-1]
             #The obj_counter is set as why_term until termination happens
             obj_counter = self.gpbo_res_simple[run_num].why_term
             list_gp_emulator_class = self.gpbo_res_GP[run_num].list_gp_emulator_class
@@ -1082,19 +1082,19 @@ class GPBODriver:
                 if i == 0:
                     # improvement is defined as infinity on 1st iteration (something is always better than nothing)
                     improvement = np.inf
-                elif results_df["Min Obj GP"].iloc[i] < float(
-                    results_df["Min Obj GP"][:-1].min()
+                elif results_df["sse_gp"].iloc[i] < float(
+                    results_df["sse_gp"][:-1].min()
                 ):
                     # And the improvement is defined as the difference between the last Min Obj Cum. and current Obj Min (unscaled)
                     if not self.method.log_scaled:
                         improvement = (
-                            results_df["Min Obj GP"][:-1].min()
-                            - results_df["Min Obj GP"].iloc[i]
+                            results_df["sse_gp"][:-1].min()
+                            - results_df["sse_gp"].iloc[i]
                         )
                     else:
                         improvement = np.exp(
-                            results_df["Min Obj GP"][:-1].min()
-                        ) - np.exp(results_df["Min Obj GP"].iloc[i])
+                            results_df["sse_gp"][:-1].min()
+                        ) - np.exp(results_df["sse_gp"].iloc[i])
                 # Otherwise
                 else:
                     # And the improvement is defined as 0, since it must be non-negative
@@ -1112,7 +1112,7 @@ class GPBODriver:
 
                 # set flag if opt acq. func val is less than the tolerance 3 times in a row
                 if (
-                    all(results_df["Opt Acq"].tail(3) < self.cs_params.acq_tol)
+                    all(results_df["acq_value"].tail(3) < self.cs_params.acq_tol)
                     and i >= 4
                 ):
                     acq_flag = True
@@ -1178,48 +1178,48 @@ class GPBODriver:
 
         # Fill Cumulative value columns based on results
         # Initialize cum columns as the same as the original columns
-        results_df.rename(columns={"index": "BO Iter"}, inplace=True)
-        results_df["BO Iter"] += 1
-        results_df["BO Method"] = self.method.report_name
-        results_df["Max Evals"] = len(results_df)
-        results_df["Theta Acq Act Cum"] = results_df["Theta Opt Acq"]
-        results_df["Theta Obj GP Cum"] = results_df["Theta Min Obj"]
-        results_df["Theta Obj Act Cum"] = results_df["Theta Min Obj"]
-        results_df["Termination"] = why_term
-        results_df["Total Run Time"] = float(results_df["Time/Iter"].sum())
+        results_df.rename(columns={"index": "bo_iter"}, inplace=True)
+        results_df["bo_iter"] += 1
+        results_df["method"] = self.method.report_name
+        results_df["max_evals"] = len(results_df)
+        results_df["theta_best_at_acq"] = results_df["theta_at_acq"]
+        results_df["theta_best_gp"] = results_df["theta_at_min"]
+        results_df["theta_best_actual"] = results_df["theta_at_min"]
+        results_df["termination_reason"] = why_term
+        results_df["total_time"] = float(results_df["time_per_iter"].sum())
 
-        results_df["Min Obj GP Cum"] = np.minimum.accumulate(results_df["Min Obj GP"])
+        results_df["best_sse_gp"] = np.minimum.accumulate(results_df["sse_gp"])
         if self.cs_params.get_y_sse == True:
-            results_df["Min Obj Act Cum"] = np.minimum.accumulate(results_df["Min Obj Act"])
+            results_df["best_sse_actual"] = np.minimum.accumulate(results_df["sse_actual"])
         else:
-            results_df["Min Obj Act Cum"] = None
-        results_df["Acq Obj Act Cum"] = np.minimum.accumulate(results_df["Acq Obj Act"])
+            results_df["best_sse_actual"] = None
+        results_df["best_sse_at_acq"] = np.minimum.accumulate(results_df["sse_at_acq"])
 
         # Add cumulative values to the dataframe
         for i in range(len(results_df)):
             if i > 0:
                 if (
-                    results_df["Acq Obj Act Cum"].iloc[i]
-                    >= results_df["Acq Obj Act Cum"].iloc[i - 1]
+                    results_df["best_sse_at_acq"].iloc[i]
+                    >= results_df["best_sse_at_acq"].iloc[i - 1]
                 ):
-                    results_df.at[i, "Theta Acq Act Cum"] = (
-                        results_df["Theta Acq Act Cum"].iloc[i - 1].copy()
+                    results_df.at[i, "theta_best_at_acq"] = (
+                        results_df["theta_best_at_acq"].iloc[i - 1].copy()
                     )
                 #If we are tracking actual values, update as normal, otherwise follow the same trend os the GP SSE
                 if (self.cs_params.get_y_sse == True and
-                    results_df["Min Obj Act Cum"].iloc[i]
-                    >= results_df["Min Obj Act Cum"].iloc[i - 1] 
-                ) or (self.cs_params.get_y_sse == False and results_df["Min Obj GP Cum"].iloc[i]
-                    >= results_df["Min Obj GP Cum"].iloc[i - 1]):
-                    results_df.at[i, "Theta Obj Act Cum"] = (
-                        results_df["Theta Obj Act Cum"].iloc[i - 1].copy()
+                    results_df["best_sse_actual"].iloc[i]
+                    >= results_df["best_sse_actual"].iloc[i - 1] 
+                ) or (self.cs_params.get_y_sse == False and results_df["best_sse_gp"].iloc[i]
+                    >= results_df["best_sse_gp"].iloc[i - 1]):
+                    results_df.at[i, "theta_best_actual"] = (
+                        results_df["theta_best_actual"].iloc[i - 1].copy()
                     )
                 if (
-                    results_df["Min Obj GP Cum"].iloc[i]
-                    >= results_df["Min Obj GP Cum"].iloc[i - 1]
+                    results_df["best_sse_gp"].iloc[i]
+                    >= results_df["best_sse_gp"].iloc[i - 1]
                 ):
-                    results_df.at[i, "Theta Obj GP Cum"] = (
-                        results_df["Theta Obj GP Cum"].iloc[i - 1].copy()
+                    results_df.at[i, "theta_best_gp"] = (
+                        results_df["theta_best_gp"].iloc[i - 1].copy()
                     )
 
         # Create df for ei and add those results here

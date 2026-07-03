@@ -74,8 +74,8 @@ def main():
     print(f"Simple Linear (CS1), method E[SSE]. True parameters: {true}")
     for i, res in enumerate(gpbo_res_simple):
         final = res.results_df.tail(1)
-        print(f"  restart {i}: best SSE = {final['Min Obj Act Cum'].iloc[0]:.6g} "
-              f"at theta = {final['Theta Obj Act Cum'].iloc[0]}  (why_term={res.why_term})")
+        print(f"  restart {i}: best SSE = {final['best_sse_actual'].iloc[0]:.6g} "
+              f"at theta = {final['theta_best_actual'].iloc[0]}  (why_term={res.why_term})")
     return gpbo_res_simple, gpbo_res_GP
 
 

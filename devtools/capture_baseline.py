@@ -131,7 +131,7 @@ def main():
             print(f"{tag} ... ", flush=True)
             try:
                 rec = run_one(cs_val, meth_val, args.iters, args.runs)
-                bested = rec["runs_out"][0]["final_row"].get("Min Obj Act Cum")
+                bested = rec["runs_out"][0]["final_row"].get("best_sse_actual")
                 print(f"{tag} OK  ({rec['wall_sec']}s)  bestSSE={bested}", flush=True)
             except Exception as e:
                 rec = {"cs_val": cs_val, "method_val": meth_val, "ok": False,

@@ -631,7 +631,7 @@ class Plotters:
                         theta_next[idcs_to_plot[1]],
                         color="black",
                         s=175,
-                        label="Opt Acq",
+                        label="acq_value",
                         marker="^",
                         zorder=3,
                     )

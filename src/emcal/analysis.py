@@ -339,13 +339,13 @@ class General_Analysis:
             df_run = results[run].results_df
             # Add the EP enum value as a column
             col_vals = job.sp.ep_enum_val
-            df_run["EP Method Val"] = EpSchedule(int(col_vals)).name
+            df_run["ep_method_val"] = EpSchedule(int(col_vals)).name
             # Set index as the first run in the job's run number + the run we're at in the job
             df_run["index"] = int(job.sp.bo_run_num + run)
-            df_run["Job ID"] = job.id
+            df_run["job_id"] = job.id
 
             # Set Run numbers as columns
-            df_run.rename(columns={"index": "Run Number"}, inplace=True)
+            df_run.rename(columns={"index": "run_number"}, inplace=True)
 
             # Add run dataframe to job dataframe after
             df_job = pd.concat([df_job, df_run], ignore_index=False)
@@ -353,8 +353,8 @@ class General_Analysis:
         # Reset index on job dataframe
         df_job = df_job.reset_index(drop=True)
         # Add cs name data to the dataframe
-        df_job["CS Name Val"] = job.sp.cs_name_val
-        df_job["CS Name"] = get_cs_class_from_val(job.sp.cs_name_val).name
+        df_job["cs_name_val"] = job.sp.cs_name_val
+        df_job["cs_name"] = get_cs_class_from_val(job.sp.cs_name_val).name
 
         if save_csv:
             all_data_path = os.path.join(job.fn("analysis_data"), "tabulated_data.csv")
@@ -499,20 +499,20 @@ class General_Analysis:
 
         """
         if self.mode == "act":
-            obj_col_sse = "Min Obj Act"
-            obj_col_sse_min = "Min Obj Act Cum"
-            param_sse = "Theta Min Obj"
-            param_sse_min = "Theta Obj Act Cum"
+            obj_col_sse = "sse_actual"
+            obj_col_sse_min = "best_sse_actual"
+            param_sse = "theta_at_min"
+            param_sse_min = "theta_best_actual"
         elif self.mode == "acq":
-            obj_col_sse = "Acq Obj Act"
-            obj_col_sse_min = "Acq Obj Act Cum"
-            param_sse = "Theta Opt Acq"
-            param_sse_min = "Theta Acq Act Cum"
+            obj_col_sse = "sse_at_acq"
+            obj_col_sse_min = "best_sse_at_acq"
+            param_sse = "theta_at_acq"
+            param_sse_min = "theta_best_at_acq"
         elif self.mode == "gp":
-            obj_col_sse = "Min Obj GP"
-            obj_col_sse_min = "Min Obj GP Cum"
-            param_sse = "Theta Min Obj"
-            param_sse_min = "Theta Obj GP Cum"
+            obj_col_sse = "sse_gp"
+            obj_col_sse_min = "best_sse_gp"
+            param_sse = "theta_at_min"
+            param_sse_min = "theta_best_gp"
 
         if data_type == "objs":
             assert isinstance(z_choices, list), "z_choices must be list of string."
@@ -540,7 +540,7 @@ class General_Analysis:
                     col_name += [obj_col_sse_min]
                     data_names += [label_g + theta + ")"]
                 if "acq" == z_choice:
-                    col_name += ["Opt Acq"]
+                    col_name += ["acq_value"]
                     data_names += ["\Xi(\mathbf{\\theta^*})"]
 
         elif data_type == "params":
@@ -554,7 +554,7 @@ class General_Analysis:
             elif "sse" == z_choices:
                 col_name = param_sse
             elif "acq" in z_choices:
-                col_name = "Theta Opt Acq"
+                col_name = "theta_at_acq"
             else:
                 warnings.warn("z_choices must be 'acq', 'sse', or 'min_sse'.")
         return col_name, data_names
@@ -676,11 +676,11 @@ class General_Analysis:
             theta_true_data = theta_true_data_w_bnds[0]
         elif found_data1:
             columns_to_convert = [
-                "Theta Opt Acq",
-                "Theta Min Obj",
-                "Theta Obj GP Cum",
-                "Theta Obj Act Cum",
-                "Theta Acq Act Cum",
+                "theta_at_acq",
+                "theta_at_min",
+                "theta_best_gp",
+                "theta_best_actual",
+                "theta_best_at_acq",
             ]
             for col in columns_to_convert:
                 df_job[col] = df_job[col].apply(self.str_to_array_df_col)
@@ -703,7 +703,7 @@ class General_Analysis:
             data = np.zeros((tot_runs, max_iters, len(list(theta_true_data.keys()))))
 
         # Sort df_job by run and iter
-        df_job = df_job.sort_values(by=["Run Number", "BO Iter"], ascending=True)
+        df_job = df_job.sort_values(by=["run_number", "bo_iter"], ascending=True)
 
         return df_job, data, data_true, sp_data, tot_runs, data_median
 
@@ -759,13 +759,13 @@ class General_Analysis:
         data_true_med = {}
         col_name, data_names = self.__z_choice_helper(z_choices, data_true, "objs")
 
-        unique_run_nums = pd.unique(df_job["Run Number"])
+        unique_run_nums = pd.unique(df_job["run_number"])
         # Loop over each choice
         for z in range(len(z_choices)):
             # Loop over runs
             for i, run in enumerate(unique_run_nums):
                 # Make a df of only the data which meets that run criteria
-                df_run = df_job[df_job["Run Number"] == run]
+                df_run = df_job[df_job["run_number"] == run]
                 z_data = df_run[col_name[z]]
                 # If sse in log choices, the "true data" is sse data from least squares
                 if "sse" in z_choices[z]:
@@ -825,10 +825,10 @@ class General_Analysis:
         )
         col_name, data_names = self.__z_choice_helper(z_choice, data_true, "params")
         # Loop over runs
-        unique_run_nums = pd.unique(df_job["Run Number"])
+        unique_run_nums = pd.unique(df_job["run_number"])
         for i, run in enumerate(unique_run_nums):
             # Make a df of only the data which meets that run criteria
-            df_run = df_job[df_job["Run Number"] == run]
+            df_run = df_job[df_job["run_number"] == run]
             df_run_arry = np.array(
                 [arr.tolist() for arr in df_run[col_name].to_numpy()]
             )
@@ -1195,7 +1195,7 @@ class General_Analysis:
                     simulator.indeces_to_consider
                 )  # For backwards compatibility
             ep_at_iter = (
-                loaded_results[run_num].results_df["Exploration Bias"].iloc[bo_iter]
+                loaded_results[run_num].results_df["alpha"].iloc[bo_iter]
             )
             ep_bias = ExplorationBias(
                 None, ep_at_iter, ep_method, None, None, None, None, None, None, None
@@ -1223,17 +1223,17 @@ class General_Analysis:
         # Create heat map data if it doesn't exists
         if self.save_csv or data_not_found:
             if self.mode == "act":
-                param_sse_min = "Theta Obj Act Cum"
+                param_sse_min = "theta_best_actual"
             elif self.mode == "acq":
-                param_sse_min = "Theta Acq Act Cum"
+                param_sse_min = "theta_best_at_acq"
             elif self.mode == "gp":
-                param_sse_min = "Theta Obj GP Cum"
+                param_sse_min = "theta_best_gp"
 
             # Get important theta values
             theta_true = loaded_results[run_num].simulator_class.theta_true
             theta_opt = loaded_results[run_num].results_df[param_sse_min].iloc[bo_iter]
             theta_next = (
-                loaded_results[run_num].results_df["Theta Opt Acq"].iloc[bo_iter]
+                loaded_results[run_num].results_df["theta_at_acq"].iloc[bo_iter]
             )
             train_theta = (
                 loaded_results_GPs[run_num]

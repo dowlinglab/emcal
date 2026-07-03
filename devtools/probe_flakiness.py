@@ -65,7 +65,7 @@ def run_once(cs_val, meth_val, iters, runs):
     drv = GPBODriver(csp, method, sim, exp, simd, ssed, None, None, None, ep, gmt)
     res, _ = drv.run(job=None)
     final = json.loads(res[0].results_df.tail(1).to_json(orient="records"))[0]
-    return float(final.get("Min Obj Act Cum"))
+    return float(final.get("best_sse_actual"))
 
 
 def main():

@@ -131,6 +131,6 @@ def run_case_study(cs_num, method_val=4, iters=10, runs=1, seed=1,
         print(f"  true parameters: {true}")
         for i, res in enumerate(gpbo_res_simple):
             final = res.results_df.tail(1)
-            print(f"  restart {i}: best objective (Min Obj Act Cum) = "
-                  f"{final['Min Obj Act Cum'].iloc[0]:.6g}  (why_term={res.why_term})")
+            print(f"  restart {i}: best objective (best_sse_actual) = "
+                  f"{final['best_sse_actual'].iloc[0]:.6g}  (why_term={res.why_term})")
     return gpbo_res_simple, gpbo_res_GP
