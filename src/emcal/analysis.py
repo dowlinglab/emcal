@@ -1273,9 +1273,10 @@ class General_Analysis:
             # Calculate GP mean and var for heat map data
             featurized_hm_data = gp_emulator.featurize_data(heat_map_data_org)
             try:
-                hm_org_mean, hm_org_var = gp_emulator.predict(
+                hm_prediction = gp_emulator.predict(
                     data=heat_map_data_org, featurized_data=featurized_hm_data
                 )
+                hm_org_mean, hm_org_var = hm_prediction
             except:
                 print(n_points_set)
 
@@ -1344,14 +1345,20 @@ class General_Analysis:
                 heat_map_data.gp_var = hm_org_var
                 heat_map_data.gp_covar = heat_map_data_org.gp_covar
 
-            # Calculate SSE and SSE var
+            # Calculate SSE and SSE var. Reuses `hm_prediction` instead of re-reading
+            # data.gp_mean/data.gp_covar (heat_map_sse_data.gp_mean/gp_covar above were set
+            # from that same prediction; heat_map_data IS heat_map_data_org in the emulator
+            # branch, so the prediction is on the exact object predict_sse operates on).
             if method.is_emulator == False:
                 heat_map_sse_data.sse, heat_map_sse_data.sse_var = (
-                    gp_emulator.predict_sse(data=heat_map_sse_data)
+                    gp_emulator.predict_sse(data=heat_map_sse_data, prediction=hm_prediction)
                 )
             else:
                 heat_map_sse_data.sse, heat_map_sse_data.sse_var = (
-                    gp_emulator.predict_sse(data=heat_map_data, method=method, exp_data=exp_data)
+                    gp_emulator.predict_sse(
+                        data=heat_map_data, method=method, exp_data=exp_data,
+                        prediction=hm_prediction,
+                    )
                 )
 
         # Get EI if needed. This operation can be expensive which is why it's optional
@@ -1402,10 +1409,13 @@ class General_Analysis:
                         gp_emulator.cand_data
                     )
                     # Evaluate GP mean/ stdev at theta
-                    cand_mean, cand_var = gp_emulator.predict(target="cand")
-                    # For Type 2 GP, the sse and sse_var are calculated from the gp_mean, gp_var, and experimental data
+                    cand_pred = gp_emulator.predict(target="cand")
+                    cand_mean, cand_var = cand_pred
+                    # For Type 2 GP, the sse and sse_var are calculated from the gp_mean, gp_var,
+                    # and experimental data. Reuses `cand_pred` instead of re-reading
+                    # data.gp_mean/data.gp_covar off gp_emulator.cand_data.
                     cand_sse_mean, cand_sse_var = gp_emulator.predict_sse(
-                        target="cand", method=method, exp_data=exp_data
+                        target="cand", method=method, exp_data=exp_data, prediction=cand_pred
                     )
                     # Otherwise objective is ei
                     ei_output = gp_emulator.expected_improvement(

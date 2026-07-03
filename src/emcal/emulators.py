@@ -966,7 +966,7 @@ class ObjectiveGP(GPEmulator):
 
         return train_data, test_data
 
-    def __eval_gp_sse_var(self, data, covar=False):
+    def __eval_gp_sse_var(self, data, covar=False, prediction=None):
         """
         Evaluates GP model sse and sse variance and for standard GPBO for the data
 
@@ -976,6 +976,10 @@ class ObjectiveGP(GPEmulator):
             Parameter sets you want to evaluate the sse and sse variance for
         covar: bool, default False
             Determines whether covariance (True) or variance (False) of sse is returned with the gp mean
+        prediction: GPPrediction or None, default None
+            If given, its .mean/.variance/.covariance are used instead of reading
+            data.gp_mean/data.gp_var/data.gp_covar (avoids re-deriving an already-computed
+            prediction). If None, falls back to the data.gp_* read (transitional).
 
         Returns
         --------
@@ -995,9 +999,14 @@ class ObjectiveGP(GPEmulator):
         """
         assert isinstance(covar, bool), "covar must be bool!"
         # For type 1, sse is the gp_mean
-        data.sse = data.gp_mean
-        data.sse_var = data.gp_var
-        data.sse_covar = data.gp_covar
+        if prediction is not None:
+            data.sse = prediction.mean
+            data.sse_var = prediction.variance
+            data.sse_covar = prediction.covariance
+        else:
+            data.sse = data.gp_mean
+            data.sse_var = data.gp_var
+            data.sse_covar = data.gp_covar
 
         if covar == False:
             var_return = data.sse_var
@@ -1006,7 +1015,7 @@ class ObjectiveGP(GPEmulator):
 
         return data.sse, var_return
 
-    def predict_sse(self, target=None, data=None, covar=False):
+    def predict_sse(self, target=None, data=None, covar=False, prediction=None):
         """
         GP-predicted SSE mean and (co)variance (standard/objective GP).
 
@@ -1014,6 +1023,13 @@ class ObjectiveGP(GPEmulator):
         the SSE *is* the GP output, so this reads the GP mean/variance already stored on
         the data (call predict() first). Choose a built-in `target` ("test"/"val"/"cand")
         or pass an arbitrary `data`.
+
+        Parameters
+        ----------
+        prediction: GPPrediction or None, default None
+            The GPPrediction returned by a prior predict() call on the same data, reused
+            instead of re-reading data.gp_mean/data.gp_var/data.gp_covar. Optional and
+            purely additive -- omitting it preserves the current data.gp_* read.
 
         Returns
         -------
@@ -1040,7 +1056,7 @@ class ObjectiveGP(GPEmulator):
             data.gp_var is not None
         ), "Must have the GP's mean and standard deviation. Hint: Use predict()"
 
-        self.__eval_gp_sse_var(data, covar)  # populates data.sse / sse_var / sse_covar
+        self.__eval_gp_sse_var(data, covar, prediction=prediction)  # populates data.sse / sse_var / sse_covar
         return GPPrediction(data.sse, variance=data.sse_var,
                             covariance=data.sse_covar, as_covar=covar)
 
@@ -1486,7 +1502,7 @@ class EmulatorGP(GPEmulator):
 
         return train_data, test_data
 
-    def __eval_gp_sse_var(self, data, method, exp_data, covar=False):
+    def __eval_gp_sse_var(self, data, method, exp_data, covar=False, prediction=None):
         """
         Evaluates GP model sse and sse (co)variance for emulator GPBO
 
@@ -1500,6 +1516,12 @@ class EmulatorGP(GPEmulator):
             The experimental data of the class. Must contain exp_data.x_vals and exp_data.y_vals
         covar: bool, default False
             Determines whether covariance (True) or variance (False) of sse is returned with the gp mean
+        prediction: GPPrediction or None, default None
+            If given, its .mean/.covariance are used instead of reading data.gp_mean/
+            data.gp_covar (avoids re-deriving an already-computed prediction). .covariance
+            is always used regardless of the covar flag -- predict() computes the full
+            covariance unconditionally (full_cov=True), so it's always valid here. If None,
+            falls back to the data.gp_* read (transitional).
 
         Returns
         --------
@@ -1520,6 +1542,9 @@ class EmulatorGP(GPEmulator):
         """
         assert isinstance(covar, bool), "covar must be bool!"
 
+        gp_mean = prediction.mean if prediction is not None else data.gp_mean
+        gp_covar = prediction.covariance if prediction is not None else data.gp_covar
+
         # Find length of theta and number of unique x in data arrays
         len_theta = data.n_theta
         len_x = len(data.get_unique_x())
@@ -1530,16 +1555,16 @@ class EmulatorGP(GPEmulator):
         indices = np.arange(0, len_theta, len_x)
         n_blocks = len(indices)
         # Slice y_sim into blocks of size len_x and calculate squared errors for each block
-        gp_mean_resh = data.gp_mean.reshape(n_blocks, len_x)
+        gp_mean_resh = gp_mean.reshape(n_blocks, len_x)
         block_errors = gp_mean_resh - exp_data.y_vals[np.newaxis, :]
-        residuals = block_errors.reshape(data.gp_covar.shape[0], -1)
+        residuals = block_errors.reshape(gp_covar.shape[0], -1)
         # Sum squared errors for each block
         sse_mean_org = np.sum((block_errors) ** 2, axis=1)
         sse_mean = sse_mean_org.flatten()
 
         # Calculate the sse variance. This SSE_variance CAN'T be negative
         sse_var_all = (
-            2 * np.trace(data.gp_covar**2) + 4 * residuals.T @ data.gp_covar @ residuals
+            2 * np.trace(gp_covar**2) + 4 * residuals.T @ gp_covar @ residuals
         )
 
         # Calculate individual variances Var(SSE[t1]), and Var(SSE[t2])
@@ -1550,7 +1575,7 @@ class EmulatorGP(GPEmulator):
             sse_var = np.zeros(n_blocks)
             for i in range(n_blocks):
                 # Get section of covariance matrix that corresponds to the covariance of the different thetas
-                covar_t_t = data.gp_covar[
+                covar_t_t = gp_covar[
                     i * len_x : (i + 1) * len_x, i * len_x : (i + 1) * len_x
                 ]
                 # Get row of block error corresponding to this matrix
@@ -1576,7 +1601,8 @@ class EmulatorGP(GPEmulator):
 
         return sse_mean, var_return
 
-    def predict_sse(self, target=None, data=None, method=None, exp_data=None, covar=False):
+    def predict_sse(self, target=None, data=None, method=None, exp_data=None, covar=False,
+                     prediction=None):
         """
         GP-predicted SSE mean and (co)variance (emulator GP).
 
@@ -1584,6 +1610,13 @@ class EmulatorGP(GPEmulator):
         the model output, so deriving the SSE needs the `method` and experimental `exp_data`.
         Choose a built-in `target` ("test"/"val"/"cand") or pass an arbitrary `data`; call
         predict() first to populate the GP mean/variance.
+
+        Parameters
+        ----------
+        prediction: GPPrediction or None, default None
+            The GPPrediction returned by a prior predict() call on the same data, reused
+            instead of re-reading data.gp_mean/data.gp_var/data.gp_covar. Optional and
+            purely additive -- omitting it preserves the current data.gp_* read.
 
         Returns
         -------
@@ -1627,7 +1660,7 @@ class EmulatorGP(GPEmulator):
             exp_data.y_vals is not None
         ), "exp_data.x_vals and exp_data.y_vals must exist!"
 
-        self.__eval_gp_sse_var(data, method, exp_data, covar)  # populates data.sse / sse_var / sse_covar
+        self.__eval_gp_sse_var(data, method, exp_data, covar, prediction=prediction)  # populates data.sse / sse_var / sse_covar
         return GPPrediction(data.sse, variance=data.sse_var,
                             covariance=data.sse_covar, as_covar=covar)
 

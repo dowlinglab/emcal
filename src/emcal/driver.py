@@ -283,13 +283,15 @@ class GPBODriver:
 
         # Evaluate GP mean and Var (This is the slowest step)
         feat_sp_data = self.gp_emulator.featurize_data(sp_data)
-        sp_data.gp_mean, sp_data.gp_var = self.gp_emulator.predict(
+        pred = self.gp_emulator.predict(
             data=sp_data, featurized_data=feat_sp_data
         )
+        sp_data.gp_mean, sp_data.gp_var = pred
 
-        # Evaluate GP SSE and SSE_Var (This is the 2nd slowest step)
+        # Evaluate GP SSE and SSE_Var (This is the 2nd slowest step). Reuses `pred` (predict()
+        # is the slowest step) instead of re-reading data.gp_mean/data.gp_covar.
         sp_data_sse_mean, sp_data_sse_var = self.gp_emulator.predict_sse(
-            data=sp_data, method=self.method, exp_data=self.exp_data
+            data=sp_data, method=self.method, exp_data=self.exp_data, prediction=pred
         )
 
         # Note - Use Sparse grid EI for approximations
@@ -473,16 +475,18 @@ class GPBODriver:
             )
 
             # Evaluate GP mean/ stdev at theta
-            cand_mean, cand_var = self.gp_emulator.predict(target="cand")
+            pred = self.gp_emulator.predict(target="cand")
+            cand_mean, cand_var = pred
 
-            # Evaluate SSE & SSE stdev at theta
+            # Evaluate SSE & SSE stdev at theta. Reuses `pred` instead of re-reading
+            # data.gp_mean/data.gp_covar off gp_emulator.cand_data.
             if self.method.is_emulator == False:
                 # For Type 1 GP, the sse and sse_var are directly inferred from the gp_mean and gp_var
-                cand_sse_mean, cand_sse_var = self.gp_emulator.predict_sse(target="cand")
+                cand_sse_mean, cand_sse_var = self.gp_emulator.predict_sse(target="cand", prediction=pred)
             else:
                 # For Type 2 GP, the sse and sse_var are calculated from the gp_mean, gp_var, and experimental data
                 cand_sse_mean, cand_sse_var = self.gp_emulator.predict_sse(
-                    target="cand", method=self.method, exp_data=self.exp_data
+                    target="cand", method=self.method, exp_data=self.exp_data, prediction=pred
                 )
 
             # Calculate objective fxn
@@ -825,12 +829,14 @@ class GPBODriver:
         # Calculate mean of var for validation set if using Jasrasaria heuristic
         if self.ep_bias.ep_enum.value == 4:
             # Calculate average gp mean and variance of the validation set
-            val_gp_mean, val_gp_var = self.gp_emulator.predict(target="val")
+            val_pred = self.gp_emulator.predict(target="val")
+            val_gp_mean, val_gp_var = val_pred
             # For emulator methods, the mean of the variance should come from the sse variance
             if self.method.is_emulator == True:
-                # Redefine gp_mean and gp_var to be the mean and variane of the sse
+                # Redefine gp_mean and gp_var to be the mean and variane of the sse. Reuses
+                # `val_pred` instead of re-reading data.gp_mean/data.gp_covar off gp_val_data.
                 val_gp_mean, val_gp_var = self.gp_emulator.predict_sse(
-                    target="val", method=self.method, exp_data=self.exp_data
+                    target="val", method=self.method, exp_data=self.exp_data, prediction=val_pred
                 )
 
             # Check for ln(sse) values
