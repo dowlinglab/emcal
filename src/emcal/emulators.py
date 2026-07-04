@@ -685,6 +685,39 @@ class GPEmulator:
 
         return GPPrediction(gp_mean, variance=gp_var, covariance=gp_covar, as_covar=covar)
 
+    def _resolve_target(self, target, data):
+        """
+        Resolve a built-in `target` to the corresponding stored Data instance.
+
+        Shared by predict_sse/expected_improvement (both subclasses), which each had an
+        identical target -> {"test", "val", "cand"} dispatch block.
+
+        Parameters
+        ----------
+        target: {"test", "val", "cand"} or None
+            Which built-in data split to use. None => return `data` unchanged.
+        data: Data or None
+            Passed through unchanged when target is None.
+
+        Returns
+        -------
+        Data or None
+
+        Raises
+        ------
+        ValueError
+            If target is not one of "test", "val", "cand", or None.
+        """
+        if target == "test":
+            return self.test_data
+        elif target == "val":
+            return self.gp_val_data
+        elif target == "cand":
+            return self.cand_data
+        elif target is not None:
+            raise ValueError("target must be 'test', 'val', 'cand', or None")
+        return data
+
 
 class ObjectiveGP(GPEmulator):
     """
@@ -985,14 +1018,7 @@ class ObjectiveGP(GPEmulator):
         -------
         GPPrediction
         """
-        if target == "test":
-            data = self.test_data
-        elif target == "val":
-            data = self.gp_val_data
-        elif target == "cand":
-            data = self.cand_data
-        elif target is not None:
-            raise ValueError("target must be 'test', 'val', 'cand', or None")
+        data = self._resolve_target(target, data)
 
         assert isinstance(data, Data), "data must be type Data"
 
@@ -1099,14 +1125,7 @@ class ObjectiveGP(GPEmulator):
         ei : np.ndarray
         ei_terms_df : pd.DataFrame
         """
-        if target == "test":
-            data = self.test_data
-        elif target == "val":
-            data = self.gp_val_data
-        elif target == "cand":
-            data = self.cand_data
-        elif target is not None:
-            raise ValueError("target must be 'test', 'val', 'cand', or None")
+        data = self._resolve_target(target, data)
 
         assert isinstance(data, Data), "data must be type Data"
         assert isinstance(exp_data, Data), "exp_data must be type Data"
@@ -1539,14 +1558,7 @@ class EmulatorGP(GPEmulator):
         -------
         GPPrediction
         """
-        if target == "test":
-            data = self.test_data
-        elif target == "val":
-            data = self.gp_val_data
-        elif target == "cand":
-            data = self.cand_data
-        elif target is not None:
-            raise ValueError("target must be 'test', 'val', 'cand', or None")
+        data = self._resolve_target(target, data)
 
         assert isinstance(
             method, GPBOMethod
@@ -1746,14 +1758,7 @@ class EmulatorGP(GPEmulator):
         The sparse-grid and Monte-Carlo methods require a single sample covariance
         matrix, so `data` must contain a single unique parameter set for those.
         """
-        if target == "test":
-            data = self.test_data
-        elif target == "val":
-            data = self.gp_val_data
-        elif target == "cand":
-            data = self.cand_data
-        elif target is not None:
-            raise ValueError("target must be 'test', 'val', 'cand', or None")
+        data = self._resolve_target(target, data)
 
         assert isinstance(data, Data), "data must be type Data"
         assert isinstance(exp_data, Data), "exp_data must be type Data"
