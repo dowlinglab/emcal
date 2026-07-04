@@ -1221,6 +1221,8 @@ class General_Analysis:
             be_data, best_error_metrics = driver._GPBODriver__get_best_error()
 
         # Create heat map data if it doesn't exists
+        hm_prediction = None
+        sse_prediction = None
         if self.save_csv or data_not_found:
             if self.mode == "act":
                 param_sse_min = "theta_best_actual"
@@ -1335,42 +1337,53 @@ class General_Analysis:
             heat_map_sse_data = simulator.to_sse_data(
                 method, heat_map_data, exp_data, cs_params.sep_fact, y_to_sse=False
             )
-            # Set the mean and variance to the correct heat map data object
+            # Set the mean and variance to the correct heat map data object. gp_covar comes
+            # from hm_prediction.covariance (always the full covariance -- predict() computes
+            # it unconditionally) rather than re-reading heat_map_data_org.gp_covar off Data.
             if not method.is_emulator:
                 heat_map_sse_data.gp_mean = hm_org_mean
                 heat_map_sse_data.gp_var = hm_org_var
-                heat_map_sse_data.gp_covar = heat_map_data_org.gp_covar
+                heat_map_sse_data.gp_covar = hm_prediction.covariance
             else:
                 heat_map_data.gp_mean = hm_org_mean
                 heat_map_data.gp_var = hm_org_var
-                heat_map_data.gp_covar = heat_map_data_org.gp_covar
+                heat_map_data.gp_covar = hm_prediction.covariance
 
             # Calculate SSE and SSE var. Reuses `hm_prediction` instead of re-reading
             # data.gp_mean/data.gp_covar (heat_map_sse_data.gp_mean/gp_covar above were set
             # from that same prediction; heat_map_data IS heat_map_data_org in the emulator
             # branch, so the prediction is on the exact object predict_sse operates on).
             if method.is_emulator == False:
-                heat_map_sse_data.sse, heat_map_sse_data.sse_var = (
-                    gp_emulator.predict_sse(data=heat_map_sse_data, prediction=hm_prediction)
-                )
+                sse_prediction = gp_emulator.predict_sse(data=heat_map_sse_data, prediction=hm_prediction)
+                heat_map_sse_data.sse, heat_map_sse_data.sse_var = sse_prediction
             else:
-                heat_map_sse_data.sse, heat_map_sse_data.sse_var = (
-                    gp_emulator.predict_sse(
-                        data=heat_map_data, method=method, exp_data=exp_data,
-                        prediction=hm_prediction,
-                    )
+                sse_prediction = gp_emulator.predict_sse(
+                    data=heat_map_data, method=method, exp_data=exp_data,
+                    prediction=hm_prediction,
                 )
+                heat_map_sse_data.sse, heat_map_sse_data.sse_var = sse_prediction
+
+        # Resolve sse mean/var: freshly computed above (sse_prediction), or -- if the block
+        # above didn't run because the heat map data was already cached and only EI needed
+        # recomputing -- already on heat_map_sse_data from the loaded cache
+        # (self.load_data(hm_sse_path_name) near the top of this method).
+        if sse_prediction is not None:
+            sse_mean_val, sse_var_val = sse_prediction.mean, sse_prediction.variance
+        else:
+            sse_mean_val, sse_var_val = heat_map_sse_data.sse, heat_map_sse_data.sse_var
 
         # Get EI if needed. This operation can be expensive which is why it's optional
+        acq_result = None
         if data_needs_ei:
             if method.method_name.value == 7:
-                heat_map_sse_data.acq = heat_map_sse_data.sse + np.sum(
-                    heat_map_sse_data.sse_var
-                )
+                acq_result = sse_mean_val + np.sum(sse_var_val)
             elif method.is_emulator == False:
                 # Reuses `hm_prediction` instead of re-reading data.gp_mean/data.gp_covar
-                # (heat_map_sse_data.gp_mean/gp_covar above were set from that same prediction).
-                heat_map_sse_data.acq = gp_emulator.expected_improvement(
+                # (heat_map_sse_data.gp_mean/gp_covar above were set from that same prediction,
+                # or -- cache-hit-without-heat-map-recompute -- hm_prediction is None here and
+                # expected_improvement falls back to its own data.gp_* read, which in that
+                # scenario already holds the cached values).
+                acq_result = gp_emulator.expected_improvement(
                     data=heat_map_sse_data, exp_data=exp_data, ep_bias=ep_bias,
                     best_error_metrics=best_error_metrics, gp_prediction=hm_prediction,
                 )[0]
@@ -1428,7 +1441,9 @@ class General_Analysis:
                     )[0]
                     ei_vals.append(ei_output)
 
-                heat_map_sse_data.acq = np.array(ei_vals)
+                acq_result = np.array(ei_vals)
+
+            heat_map_sse_data.acq = acq_result
 
         # Save data if necessary
         if self.save_csv:
@@ -1445,25 +1460,29 @@ class General_Analysis:
 
         # Define sse_sim, sse_gp_mean, and sse_gp_var, and ei based on whether to report log scaled data
         sse_sim = heat_map_sse_data.y_vals
-        sse_var = heat_map_sse_data.sse_var
-        sse_mean = heat_map_sse_data.sse
+        sse_var = sse_var_val
+        sse_mean = sse_mean_val
 
         # Reshape data to correct shape and add to list to return
         reshape_list = [sse_sim, sse_mean, sse_var]
         all_data = [var.reshape(theta_pts, theta_pts).T for var in reshape_list]
         if get_ei:  # and heat_map_sse_data.acq is not None
+            # acq_result is set above if this call computed it; otherwise (cache hit with acq
+            # already present, data_needs_ei False) it's still on heat_map_sse_data from the
+            # loaded cache.
+            final_acq = acq_result if acq_result is not None else heat_map_sse_data.acq
             try:
-                acq_new = copy.deepcopy(heat_map_sse_data.acq)
+                acq_new = copy.deepcopy(final_acq)
                 all_data += [acq_new.reshape(theta_pts, theta_pts).T]
             except:
                 # print(
-                #     heat_map_sse_data.sse,
-                #     heat_map_sse_data.sse_var,
+                #     sse_mean,
+                #     sse_var,
                 #     get_ei,
                 #     data_needs_ei,
-                #     heat_map_sse_data.acq,
+                #     final_acq,
                 # )
-                all_data += [heat_map_sse_data.acq.reshape(theta_pts, theta_pts).T]
+                all_data += [final_acq.reshape(theta_pts, theta_pts).T]
         else:
             all_data += [None]
 
