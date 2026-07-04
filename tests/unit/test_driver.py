@@ -163,9 +163,9 @@ def test_opt_with_scipy_sse_sets_min_obj_companions_and_augments_train_data():
         "sse", get_y=True
     )
 
-    assert best_val is driver._GPBODriver__min_obj_val
-    assert best_class is driver._GPBODriver__min_obj_class
-    assert best_prediction is driver._GPBODriver__min_obj_prediction
+    assert best_val is driver.acq_optimizer.min_obj_val
+    assert best_class is driver.acq_optimizer.min_obj_class
+    assert best_prediction is driver.acq_optimizer.min_obj_prediction
     assert np.all(np.isfinite(best_prediction.mean))
 
     driver._GPBODriver__augment_train_data(best_class)
