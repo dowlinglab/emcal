@@ -6,6 +6,8 @@ from typing import Any
 
 import numpy as np
 
+from ._utils import vector_to_1D_array
+
 
 @dataclass
 class GPPrediction:
@@ -52,7 +54,6 @@ class Data:
     --------------
     __init__(*): Constructor method
     __get_unique(all_vals): Gets unique instances of a certain type of data
-    __vector_to_1D_array(array): Turns arrays that are shape (n,) into (n, 1) arrays
     get_unique_theta(): Defines the unique parameter sets from self.theta_vals
     get_unique_x(): Defines the unique state point data from self.x_vals
     n_theta (property): Defines the total number of parameter sets (self.theta_vals)
@@ -154,25 +155,6 @@ class Data:
         unique_vals = np.array([all_vals[index] for index in sorted(unique_indexes)])
 
         return unique_vals
-
-    def __vector_to_1D_array(self, array):
-        """
-        Turns arrays that are shape (n,) into (n, 1) arrays
-
-        Parameters
-        ----------
-        array: np.ndarray
-            Array of n dimensions
-
-        Returns
-        -------
-        array: np.ndarray
-            If n > 1, return original array. Otherwise, return 2D array with shape (-1,n)
-        """
-        # If array is not 2D, give it shape (len(array), 1)
-        if not len(array.shape) > 1:
-            array = array.reshape(-1, 1)
-        return array
 
     def get_unique_theta(self):
         """
@@ -295,7 +277,7 @@ class Data:
         """
         assert self.x_vals is not None, "x_vals must be defined"
         # Get dim of x data
-        dim_x_data = self.__vector_to_1D_array(self.x_vals).shape[1]
+        dim_x_data = vector_to_1D_array(self.x_vals).shape[1]
 
         return dim_x_data
 
