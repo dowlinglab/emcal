@@ -26,7 +26,8 @@ EXPECTED_COLUMNS = [
 
 
 def _build_driver(method_val=7, mean_value=1.0, variance_value=0.25, bo_iter_tot=3,
-                   retrain_GP=1, reoptimize_obj=1, gen_heat_map_data=False, seed=1):
+                   retrain_GP=1, reoptimize_obj=1, gen_heat_map_data=False, seed=1,
+                   bo_run_tot=1):
     # get_y_sse=True is required for method 7 (E[SSE]): __run_bo_iter reads
     # acq_sse_theta_data.y_vals unconditionally when assembling sse_at_acq, matching the
     # pattern already established in tests/unit/test_end_to_end.py.
@@ -41,8 +42,9 @@ def _build_driver(method_val=7, mean_value=1.0, variance_value=0.25, bo_iter_tot
     ssed = sim.to_sse_data(method, simd, exp, 1.0, False)
     ep = ExplorationBias(1, None, EpSchedule.CONSTANT, None, None, None, None, None, None, None)
     cfg = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_GP=retrain_GP,
-                    reoptimize_obj=reoptimize_obj, bo_iter_tot=bo_iter_tot, bo_run_tot=1,
-                    gen_heat_map_data=gen_heat_map_data, seed=seed, get_y_sse=True)
+                    reoptimize_obj=reoptimize_obj, bo_iter_tot=bo_iter_tot,
+                    bo_run_tot=bo_run_tot, gen_heat_map_data=gen_heat_map_data, seed=seed,
+                    get_y_sse=True)
     backend = FakeGPBackend(mean_value=mean_value, variance_value=variance_value)
     driver = GPBODriver(cfg, method, sim, exp, simd, ssed, None, None, None, ep,
                          GenMethod.LHS, backend=backend)
@@ -82,6 +84,34 @@ def test_run_grows_training_data_every_iteration(method_val):
     step = sizes[1] - sizes[0]
     assert sizes[2] - sizes[1] == step
     assert step == (5 if method_val == 7 else 1)  # n_x=5 for the CS1 experimental grid
+
+
+def test_run_trains_a_fresh_emulator_each_restart():
+    """Seam #1 guard (PHASE8_AUDIT.md §3.8, risk #1): each restart in run() must build and
+    split a genuinely fresh gp_emulator, never reuse a reference held over from the previous
+    restart. A single-restart run/golden config can't exercise this at all -- the
+    decomposition's riskiest failure mode (a collaborator caching gp_emulator at
+    construction instead of re-syncing it every restart) only manifests starting on the
+    *second* restart. Pin this now, on the pre-decomposition driver, so Phase 8.3-c's
+    AcquisitionOptimizer extraction has a net that would catch a stale-reference
+    regression that golden (single-restart configs) would silently miss.
+    """
+    driver, _ = _build_driver(method_val=7, bo_iter_tot=3, bo_run_tot=2)
+    _, res_gp = driver.run(job=None)
+
+    assert len(res_gp) == 2
+    run0_first = res_gp[0].list_gp_emulator_class[0]
+    run0_last = res_gp[0].list_gp_emulator_class[-1]
+    run1_first = res_gp[1].list_gp_emulator_class[0]
+
+    # Restart 2 built a genuinely new emulator object...
+    assert run1_first is not run0_last
+    assert run1_first is not run0_first
+    # ...freshly split, so its training set starts back at the initial split size instead
+    # of continuing to grow from wherever restart 1 left off (which is what silently
+    # reusing a stale reference would produce).
+    assert run1_first.train_data.n_theta == run0_first.train_data.n_theta
+    assert run1_first.train_data.n_theta < run0_last.train_data.n_theta
 
 
 def test_run_calls_backend_train_exactly_bo_iter_tot_times_retrain_gp():
