@@ -326,8 +326,6 @@ class Data:
         assert self.theta_vals is not None, "data must have theta_vals"
         assert isinstance(rng_seed, int) or rng_seed is None, "rng_seed must be int or None"
 
-        #Save the seed used to shuffle and split the data + create rng w/ this seed. Default to no seed
-        self.seed = rng_seed
         if rng_seed is not None:
             rng = np.random.default_rng(rng_seed)
         else:

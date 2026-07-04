@@ -33,7 +33,7 @@ def _objective_gp(lenscl=None, outputscl=None, retrain_GP=1, normalize=False,
     backend = FakeGPBackend(mean_value=mean_value, variance_value=variance_value)
     gp_sim_data = _objective_sim_data(n_theta=n_theta, sep_fact=sep_fact)
     gp = ObjectiveGP(gp_sim_data, None, None, None, None, Kernel.MAT_52, lenscl, None,
-                      outputscl, retrain_GP, 0, normalize, None, None, None, None,
+                      outputscl, retrain_GP, 0, normalize,
                       backend=backend)
     gp.split_train_test(sep_fact, shuffle_seed=0)
     return gp, backend
@@ -55,7 +55,7 @@ def _emulator_gp(lenscl=None, outputscl=None, retrain_GP=1, normalize=False,
     backend = FakeGPBackend(mean_value=mean_value, variance_value=variance_value)
     gp_sim_data, x_unique = _emulator_sim_data(n_theta_unique, n_x, sep_fact)
     gp = EmulatorGP(gp_sim_data, None, None, None, None, Kernel.MAT_52, lenscl, None,
-                     outputscl, retrain_GP, 0, normalize, None, None, None, None,
+                     outputscl, retrain_GP, 0, normalize,
                      backend=backend)
     gp.split_train_test(sep_fact, shuffle_seed=0)
     return gp, backend, x_unique

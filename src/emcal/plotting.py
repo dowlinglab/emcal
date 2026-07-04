@@ -1,4 +1,3 @@
-from matplotlib import pyplot as plt
 import numpy as np
 import math
 import pandas as pd
@@ -9,10 +8,8 @@ from collections.abc import Iterable
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-import matplotlib.ticker as ticker
-from .GPBO_Classes_New import Data, MethodName
 from .analysis import *
-from .analysis import is_job_like, JobContext  # explicit (robust if analysis adds __all__)
+from .analysis import is_job_like  # explicit (robust if analysis adds __all__)
 from .case_studies import get_cs_class_from_val
 
 import warnings
@@ -70,18 +67,8 @@ class Plotters:
         self.cmap = "YlOrRd_r"
         self.xbins = 5
         self.ybins = 5
-        self.zbins = 900
         self.title_fntsz = 24
         self.other_fntsz = 24
-        self.colors = [
-            "red",
-            "blue",
-            "green",
-            "purple",
-            "darkorange",
-            "deeppink",
-            "teal",
-        ]
         self.method_names = [
             "Conventional",
             "Log Conventional",
@@ -91,15 +78,6 @@ class Plotters:
             "Monte Carlo",
             "E[SSE]",
         ]
-        self.gpbo_meth_dict = {
-            "Conventional": 1,
-            "Log Conventional": 2,
-            "Independence": 3,
-            "Log Independence": 4,
-            "Sparse Grid": 5,
-            "Monte Carlo": 6,
-            "E[SSE]": 7,
-        }
 
     def plot_hyperparameters(self, job, title=None):
         """
@@ -384,9 +362,6 @@ class Plotters:
                 all_z_titles.append(
                     r"$\mathbf{\sigma}^2_{\tilde{\mathscr{L}}(\mathbf{\theta})}$"
                 )
-                # all_z_titles.append(
-                #     r"$\mathbf{\sigma}^2_{\tilde{g}(\mathbf{\theta})}$"
-                # )
             elif "acq" == z_choice:
                 all_z_data.append(ei)
                 all_z_titles.append(r"$\Xi(\mathbf{\theta})$")
@@ -578,7 +553,7 @@ class Plotters:
                     xx,
                     yy,
                     z,
-                    levels=cbar_ticks,  # self.zbins,
+                    levels=cbar_ticks,
                     # tick_positions=nticks,
                     cmap=plt.cm.get_cmap(self.cmap),
                     norm=norm,
@@ -1063,9 +1038,6 @@ class Plotters:
                 ax.set_ylim(bottom=np.min(plot_y), top=np.max(plot_y))
 
             if plot_z is not None:
-                # if np.max(plot_z) > 10:
-                #     max_value = np.maximum(np.max(plot_z), 1000)
-                # else:
                 max_value = np.maximum(np.max(plot_z), 5)
                 ax.set_zlim(zmin=0, zmax=max_value)
             ax.set_box_aspect([1, 1, 1])

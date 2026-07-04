@@ -4,9 +4,8 @@ Type-1) and EmulatorGP (GP emulates the model output; Type-2).
 import numpy as np
 import pandas as pd
 import math
-import copy
 from enum import Enum
-from sklearn.preprocessing import StandardScaler, PowerTransformer, RobustScaler
+from sklearn.preprocessing import RobustScaler
 from .enums import Kernel
 from .data import Data, SimulationData, GPPrediction
 from .methods import GPBOMethod
@@ -48,10 +47,6 @@ class GPEmulator:
         retrain_GP,
         set_seed,
         normalize,
-        __feature_train_data,
-        __feature_test_data,
-        __feature_val_data,
-        __feature_cand_data,
         backend=None,
     ):
         """
@@ -77,14 +72,6 @@ class GPEmulator:
             Random seed
         normalize: bool
             Determines whether data is standardized (using the sklearn RobustScaler)
-        __feature_train_data: np.ndarray
-            The feature data for the training data in ndarray form
-        __feature_test_data: np.ndarray
-            The feature data for the testing data in ndarray form
-        __feature_val_data: np.ndarray
-            The feature data for the validation data in ndarray form
-        __feature_cand_data: np.ndarray
-            The feature data for the candidate theta data in ndarray. Used with GPBODriver.__opt_with_scipy()
         backend: GPBackend or None, default None
             The GP backend to use. If None, resolved via get_backend(gp_package) (gpflow by
             default) -- production behavior is unchanged. Tests inject a fake backend here.
@@ -156,10 +143,6 @@ class GPEmulator:
         if normalize == True:
             self.scalerX = RobustScaler(unit_variance=True)
             self.scalerY = RobustScaler(unit_variance=True)
-        self.__feature_train_data = None  # Added using child class
-        self.__feature_test_data = None  # Added using child class
-        self.__feature_val_data = None  # Added using child class
-        self.__feature_cand_data = None  # Added using child class
 
         # Resolve the GP library backend (gpflow by default). Selecting it here keeps the
         # heavy gpflow/TF import lazy: it only happens when a GPEmulator is constructed.
@@ -498,10 +481,6 @@ class GPEmulator:
                 white_var_bnds[1],
                 np.array(rng.uniform(0.05, 10), dtype="float64"),
             )
-        # try:
-        #     print(lenscls.numpy(), tau.numpy(), white_var.numpy())
-        # except:
-        #     print(lenscls, tau, white_var)
         return lenscls, tau, white_var
 
     def set_gp_model(self, retrain_count):
@@ -649,13 +628,9 @@ class GPEmulator:
                 gp_mean_scl.reshape(-1, 1)
             ).flatten()
             gp_covar = float(self.scalerY.scale_**2) * gp_covar_scl
-            # grad_mean = self.scalerY.inverse_transform(
-            #     grad_mean_scl.reshape(-1, 1)
-            # ).flatten()
         else:
             gp_mean = gp_mean_scl
             gp_covar = gp_covar_scl
-            # grad_mean = grad_mean_scl
 
         gp_var = np.diag(gp_covar)
 
@@ -746,10 +721,6 @@ class ObjectiveGP(GPEmulator):
         retrain_GP,
         set_seed,
         normalize,
-        feature_train_data,
-        feature_test_data,
-        feature_val_data,
-        feature_cand_data,
         backend=None,
     ):
         """
@@ -779,14 +750,6 @@ class ObjectiveGP(GPEmulator):
             Random seed
         normalize: bool
             Determines whether data is standardized (with sklearn RobustScaler) before training
-        feature_train_data: np.ndarray
-            The feature data for the training data in ndarray form
-        feature_test_data: np.ndarray
-            The feature data for the testing data in ndarray form
-        feature_val_data: np.ndarray
-            The feature data for the validation data in ndarray form
-        feature_cand_data: np.ndarray
-            The feature data for the candidate theta data in ndarray. Used with GPBODriver.__opt_with_scipy()
         backend: GPBackend or None, default None
             The GP backend to use. If None, resolved via get_backend (gpflow by default).
 
@@ -808,10 +771,6 @@ class ObjectiveGP(GPEmulator):
             retrain_GP,
             set_seed,
             normalize,
-            feature_train_data,
-            feature_test_data,
-            feature_val_data,
-            feature_cand_data,
             backend=backend,
         )
         # Add training and testing data as child features
@@ -1213,7 +1172,7 @@ class EmulatorGP(GPEmulator):
     get_dim_gp_data(): Defines the total dimension of input data used by the GP
     featurize_data(data): Collects the features of the GP into ndarray form from an instance of the Data class
     split_train_test(sep_fact, seed): Finds the simulation data to use as training/testing data
-    __eval_gp_sse_var(data, method, exp_data, covar): Calculates the SSE mean and variance for a given input set
+    __eval_gp_sse_var(data, exp_data, covar): Calculates the SSE mean and variance for a given input set
     predict_sse(target=None, data=None, method=None, exp_data=None, covar=False): GP-predicted SSE mean and (co)variance
     calc_best_error(method, exp_data): Calculates the best error metrics for the GP
     __eval_gp_ei(sim_data, exp_data, ep_bias, best_error_metrics, method, sg_mc_samples): Evaluates the expected improvement for the GP
@@ -1236,10 +1195,6 @@ class EmulatorGP(GPEmulator):
         retrain_GP,
         set_seed,
         normalize,
-        feature_train_data,
-        feature_test_data,
-        feature_val_data,
-        feature_cand_data,
         backend=None,
     ):
         """
@@ -1269,14 +1224,6 @@ class EmulatorGP(GPEmulator):
             Random seed
         normalize: bool
             Determines whether data is standardized (with sklearn RobustScaler) before training
-        feature_train_data: np.ndarray
-            The feature data for the training data in ndarray form
-        feature_test_data: np.ndarray
-            The feature data for the testing data in ndarray form
-        feature_val_data: np.ndarray
-            The feature data for the validation data in ndarray form
-        feature_cand_data: np.ndarray
-            The feature data for the candidate theta data in ndarray. Used with GPBODriver.__opt_with_scipy()
         backend: GPBackend or None, default None
             The GP backend to use. If None, resolved via get_backend (gpflow by default).
 
@@ -1298,10 +1245,6 @@ class EmulatorGP(GPEmulator):
             retrain_GP,
             set_seed,
             normalize,
-            feature_train_data,
-            feature_test_data,
-            feature_val_data,
-            feature_cand_data,
             backend=backend,
         )
         # Set training and testing data as child class specific objects
@@ -1494,7 +1437,7 @@ class EmulatorGP(GPEmulator):
 
         return train_data, test_data
 
-    def __eval_gp_sse_var(self, data, method, exp_data, covar=False, prediction=None):
+    def __eval_gp_sse_var(self, data, exp_data, covar=False, prediction=None):
         """
         Evaluates GP model sse and sse (co)variance for emulator GPBO
 
@@ -1502,8 +1445,6 @@ class EmulatorGP(GPEmulator):
         ----------
         data: Data
             Parameter sets you want to evaluate the sse and sse variance for
-        method: GPBOMethod
-            Contains data for methods
         exp_data: Data
             The experimental data of the class. Must contain exp_data.x_vals and exp_data.y_vals
         covar: bool, default False
@@ -1626,7 +1567,7 @@ class EmulatorGP(GPEmulator):
             exp_data.y_vals is not None
         ), "exp_data.x_vals and exp_data.y_vals must exist!"
 
-        sse_mean, sse_var, sse_covar = self.__eval_gp_sse_var(data, method, exp_data, covar, prediction=prediction)
+        sse_mean, sse_var, sse_covar = self.__eval_gp_sse_var(data, exp_data, covar, prediction=prediction)
         return GPPrediction(sse_mean, variance=sse_var, covariance=sse_covar, as_covar=covar)
 
     def calc_best_error(self, method, exp_data):
@@ -1947,7 +1888,7 @@ def build_gp_emulator(
             noise_std = None
         gp_emulator = ObjectiveGP(
             all_gp_data, all_val_data, None, None, None, kernel, lenscl, noise_std,
-            outputscl, retrain_GP, seed, normalize, None, None, None, None,
+            outputscl, retrain_GP, seed, normalize,
             backend=backend,
         )
     else:
@@ -1956,7 +1897,7 @@ def build_gp_emulator(
         noise_std = simulator_noise_std  # Yexp_std is exactly the noise_std of the GP Kernel
         gp_emulator = EmulatorGP(
             all_gp_data, all_val_data, None, None, None, kernel, lenscl, noise_std,
-            outputscl, retrain_GP, seed, normalize, None, None, None, None,
+            outputscl, retrain_GP, seed, normalize,
             backend=backend,
         )
     return gp_emulator

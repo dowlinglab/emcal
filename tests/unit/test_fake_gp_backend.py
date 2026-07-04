@@ -55,15 +55,14 @@ def test_fake_backend_records_train_and_predict_calls():
 def test_gpemulator_backend_none_resolves_to_gpflow_default():
     # gp_sim_data/gp_val_data/cand_data may be None at this base-class level; confirms the
     # real __init__ code path (not a re-implementation of its logic) picks gpflow by default.
-    emu = GPEmulator(None, None, None, Kernel.MAT_52, None, 1.0, None, 0, None, False,
-                      None, None, None, None)
+    emu = GPEmulator(None, None, None, Kernel.MAT_52, None, 1.0, None, 0, None, False)
     assert isinstance(emu._backend, GpflowBackend)
 
 
 def test_gpemulator_backend_kwarg_bypasses_registry():
     fake = FakeGPBackend()
     emu = GPEmulator(None, None, None, Kernel.MAT_52, None, 1.0, None, 0, None, False,
-                      None, None, None, None, backend=fake)
+                      backend=fake)
     assert emu._backend is fake
 
 

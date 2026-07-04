@@ -4,7 +4,7 @@
 import numpy as np
 import pandas as pd
 import scipy
-from scipy.stats import norm, multivariate_normal
+from scipy.stats import norm
 from scipy import integrate
 import math
 import copy
@@ -30,8 +30,8 @@ class ExpectedImprovement:
     __calc_ei_log_emulator(gp_mean, gp_var, y_target): Calculates the expected improvement for the log independence approx.
     __ei_approx_ln_term(epsilon, gp_mean, gp_stdev, y_target): Calculates the integral for the log independence approx.
     __calc_ei_sparse(gp_mean, gp_var, y_target): Calculates the expected improvement for the sparse grid method
-    __get_sparse_grids(dim, output=1,depth=10, rule="gauss-hermite-odd", verbose = False, alpha = 0): Gets the sparse grid
-    __calc_ei_mc(gp_mean, gp_var, y_target): Calculates the expected improvement for the Monte Carlo method
+    __get_sparse_grids(dim, output=1,depth=10, rule="gauss-hermite-odd", verbose = False): Gets the sparse grid
+    __calc_ei_mc(gp_var, y_target): Calculates the expected improvement for the Monte Carlo method
     __bootstrap(pilot_sample, ns=100, alpha=0.05, seed = None): Bootstraps for the Monte Carlo method
     """
 
@@ -100,7 +100,6 @@ class ExpectedImprovement:
         self.gp_covar = gp_covar
         self.gp_var = np.diag(gp_covar)
         self.best_error = best_error_metrics[0]
-        self.be_theta = best_error_metrics[1]
         self.best_error_x = best_error_metrics[2]
         self.samples_mc_sg = sg_mc_samples
         # Acquisition computation strategy, selected at construction: method=None uses the
@@ -338,7 +337,7 @@ class ExpectedImprovement:
 
             elif self.method.method_name.value == 6:  # 2D
                 ei[i], row_data = self.__calc_ei_mc(
-                    gp_mean_i, gp_var_i, self.exp_data.y_vals
+                    gp_var_i, self.exp_data.y_vals
                 )
 
             else:
@@ -728,7 +727,7 @@ class ExpectedImprovement:
         return ei_temp, row_data
 
     def __get_sparse_grids(
-        self, dim, output=1, depth=10, rule="gauss-hermite-odd", verbose=False, alpha=0
+        self, dim, output=1, depth=10, rule="gauss-hermite-odd", verbose=False
     ):
         """
         This function builds a sparse grid
@@ -745,8 +744,6 @@ class ExpectedImprovement:
             Quadrature rule
         verbose: bool, default False
             Determines Whether or not plot of sparse grid is shown
-        alpha: int, default 0
-            Specifies $\alpha$ parameter for the integration weight $\rho(x)$
 
         Returns
         --------
@@ -775,14 +772,12 @@ class ExpectedImprovement:
             plt.show()
         return points_p, weights_p
 
-    def __calc_ei_mc(self, gp_mean, gp_var, y_target):
+    def __calc_ei_mc(self, gp_var, y_target):
         """
         Calculates the expected improvement of the emulator approach with a Monte Carlo approach (2D)
 
         Parameters
         ----------
-        gp_mean: np.ndarray
-            Model mean at state points x for a given parameter set
         gp_variance: np.ndarray
             Model variance at state points x for a given parameter set
         y_target: np.ndarray

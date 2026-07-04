@@ -7,7 +7,6 @@ numerics are identical to the pre-extraction code.
 import numpy as np
 import gpflow
 import tensorflow as tf
-import tensorflow_probability as tfp
 from tensorflow_probability import bijectors as tfb
 
 from .base import GPBackend

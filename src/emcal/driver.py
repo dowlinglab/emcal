@@ -3,18 +3,15 @@ acquisition optimization, termination, and results assembly).
 """
 import numpy as np
 import pandas as pd
-import scipy
 import scipy.optimize as optimize
 import scipy.spatial.distance as distance
 import copy
 import warnings
-import os
 import time
 import pickle
 import gzip
-from enum import Enum
 from itertools import combinations
-from .enums import MethodName, Kernel, GenMethod
+from .enums import MethodName, GenMethod
 from .methods import GPBOMethod
 from .config import BOConfig
 from .simulator import Simulator
@@ -531,11 +528,6 @@ class GPBODriver:
                     )
                 obj = -1 * ei_output[0]
 
-            # Companion to __min_obj_class.acq: for neg_ei, __eval_gp_ei's internal
-            # `sim_data.acq = ei` has already set cand_data.acq to the raw (un-negated) ei
-            # value by this point; for sse/E_sse, .acq isn't set until the explicit write
-            # below, so this mirrors None here -- matches .acq's actual value at each point
-            # where it's read in the comparisons that follow.
             cand_acq_val = ei_output[0] if opt_obj == "neg_ei" else None
 
             set_acq_val = True
@@ -601,7 +593,6 @@ class GPBODriver:
 
             if set_acq_val and opt_obj != "neg_ei":
                 self.__min_obj_val = obj
-                self.__min_obj_class.acq = obj
 
         return obj
 

@@ -1,10 +1,8 @@
 """ExplorationBias: the exploration-bias parameter (alpha) and its update schedules
 (constant, decay, Boyle, Jasrasaria) for the acquisition function.
 """
-import numpy as np
 import warnings
 from enum import Enum
-from .enums import EpSchedule
 
 
 class ExplorationBias:

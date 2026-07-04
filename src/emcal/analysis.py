@@ -4,11 +4,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import copy
-from ast import literal_eval
 from collections.abc import Iterable
-from sklearn.preprocessing import MinMaxScaler
-from scipy.spatial.distance import pdist, squareform
-import string
 
 # NOTE: signac is intentionally NOT imported here. This module operates on a "job-like"
 # object that exposes `.sp` (statepoint), `.fn(name)` (path into a results workspace) and
@@ -186,9 +182,6 @@ class General_Analysis:
         self.mode = mode
         self.criteria_dict = criteria_dict
         self.project = project
-        self.study_results_dir = os.path.join(
-            self.make_dir_name_from_criteria(self.criteria_dict)
-        )
         self.save_csv = save_csv
 
     def make_dir_name_from_criteria(self, dict_to_use, is_nested=False):
@@ -254,20 +247,11 @@ class General_Analysis:
             result_dir = os.path.join(
                 project_name, "Results_" + self.mode, "/".join(parts)
             )
-        # result_dir = (
-        #     "/".join(parts)
-        #     if is_nested
-        #     else os.path.join("Results_" + self.mode, "/".join(parts))
-        # )
         return result_dir
 
     def str_to_array_df_col(self, str_arr):
 
         if isinstance(str_arr, str):
-            # Use regex to normalize spaces inside the brackets
-            # cleaned_str = re.sub(r'\s+', ' ', str_arr)  # Replace multiple spaces with a single space
-            # cleaned_str = re.sub(r'\[\s+', '[', cleaned_str)  # Remove spaces after the opening bracket
-            # cleaned_str = re.sub(r'\s+\]', ']', cleaned_str)  # Remove spaces before the closing bracket
             cleaned_str1 = re.sub(r"\s+", " ", str_arr.strip())
             cleaned_str = re.sub(r"(-?\d+\.\d*|\d+)\s+", r"\1, ", cleaned_str1)
             array_from_str = np.array(ast.literal_eval(f"[{cleaned_str}]"), dtype=float)
@@ -558,15 +542,6 @@ class General_Analysis:
         return col_name, data_names
 
     def best_error(self, job):
-        # jobs = sorted(
-        #     self.project.find_jobs(self.criteria_dict), key=lambda job: job._id
-        # )
-
-        # valid_files = [
-        #     job.fn("BO_Results_GPs.gz")
-        #     for job in jobs
-        #     if os.path.exists(job.fn("BO_Results_GPs.gz"))
-        # ]
         # Look for be data for job
         tab_data_path1 = os.path.join(job.fn("analysis_data"), "init_be_data.csv")
         tab_data_path2 = os.path.join(job.fn("analysis_data"), "init_be_theta_data.csv")
@@ -576,11 +551,6 @@ class General_Analysis:
 
         if not found_data1 or not found_data2 or self.save_csv:
             if os.path.exists(job.fn("BO_Results_GPs.gz")):
-                # if len(valid_files) > 0:
-                # smallest_file = min(valid_files, key=lambda x: os.path.getsize(x))
-                # Find the job corresponding to the smallest file size
-                # smallest_file_index = valid_files.index(smallest_file)
-                # job = jobs[smallest_file_index]
                 smallest_file = job.fn("BO_Results_GPs.gz")
                 # Open the statepoint of the job
                 with open(job.fn("signac_statepoint.json"), "r") as json_file:
@@ -1478,13 +1448,6 @@ class General_Analysis:
                 acq_new = copy.deepcopy(final_acq)
                 all_data += [acq_new.reshape(theta_pts, theta_pts).T]
             except:
-                # print(
-                #     sse_mean,
-                #     sse_var,
-                #     get_ei,
-                #     data_needs_ei,
-                #     final_acq,
-                # )
                 all_data += [final_acq.reshape(theta_pts, theta_pts).T]
         else:
             all_data += [None]

@@ -9,8 +9,7 @@ import warnings
 import itertools
 from scipy.stats import qmc
 from .enums import GenMethod
-from .data import Data, ExperimentalData, SimulationData, ObjectiveData
-from .methods import GPBOMethod
+from .data import ExperimentalData, SimulationData, ObjectiveData
 
 
 class Simulator:
