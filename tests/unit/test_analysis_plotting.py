@@ -1,8 +1,10 @@
 """Per-run analysis.py + plotting.py coverage, via a pytest port of
 devtools/verify_analysis.py's build_fixture()/JobContext pattern (signac-free).
 
-Marked `slow` (each fixture builds and trains GPs via gpflow, like test_end_to_end.py).
-Run the fast tier with `pytest -m "not slow"`; run these with the full suite.
+Runs BO via FakeGPBackend (no real GP training), so this is fast enough for the
+"not slow" tier -- unlike the real-GP version this replaced, which took ~1 minute.
+devtools/verify_analysis.py (the real-GP numerical net) is unchanged and still the
+regression gate for exact values; these tests assert structure/shape/no-crash instead.
 """
 import gzip
 import json
@@ -25,7 +27,7 @@ from emcal.analysis import JobContext, General_Analysis
 from emcal.data import Data
 from emcal.plotting import Plotters
 
-pytestmark = pytest.mark.slow
+from _fakes import FakeGPBackend, sum_features
 
 
 def _build_job_ctx(tmp_path_factory, method_val):
@@ -43,7 +45,12 @@ def _build_job_ctx(tmp_path_factory, method_val):
     ssed = sim.to_sse_data(method, simd, exp, 1.0, False)
     cfg = BOConfig(problem.name, 1, 1.0, True, Kernel(1), None, None,
                     3, 3, False, 3, 1, False, None, 1, 1e-7, 1e-7, True, False)
-    drv = GPBODriver(cfg, method, sim, exp, simd, ssed, None, None, None, ep, GenMethod(1))
+    # A theta/x-dependent mean (not a flat constant): plot_gp_fit's heat-map contourf
+    # degenerates (vmin == vmax) on a perfectly flat surface, which a real trained GP
+    # would essentially never produce but a constant-mean fake backend would.
+    backend = FakeGPBackend(mean_value=1.0, variance_value=0.25, mean_fn=sum_features)
+    drv = GPBODriver(cfg, method, sim, exp, simd, ssed, None, None, None, ep, GenMethod(1),
+                      backend=backend)
     res_simple, res_gp = drv.run(job=None)
 
     ws = tmp_path_factory.mktemp(f"gpbo_analysis_m{method_val}")

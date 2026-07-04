@@ -11,6 +11,16 @@ import numpy as np
 from emcal.gp_backend.base import GPBackend
 
 
+def sum_features(eval_points):
+    """A simple, deterministic, picklable mean_fn: varies with the input features (unlike
+    a constant mean_value), which matters for heat-map/contour plots -- a perfectly flat
+    surface degenerates matplotlib's contourf (vmin == vmax) in ways a real trained GP's
+    (non-constant) predictions never would. Module-level so pickling a driver run that
+    used it (e.g. saved BO_Results_GPs.gz) doesn't fail like a lambda would.
+    """
+    return np.sum(eval_points, axis=1)
+
+
 class FakeGPBackend(GPBackend):
     """A deterministic, no-training GP backend for fast orchestration tests.
 
