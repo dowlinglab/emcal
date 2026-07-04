@@ -30,7 +30,7 @@ from emcal.plotting import Plotters
 from _fakes import FakeGPBackend, sum_features
 
 
-def _build_job_ctx(tmp_path_factory, method_val):
+def _build_job_ctx(tmp_path_factory, method_val, backend=None):
     # Mirrors devtools/verify_analysis.py's build_fixture(): a small deterministic CS1 run,
     # saved as a JobContext workspace so the per-run analysis/plotting methods (which read a
     # job's result files + statepoint) can be exercised without signac.
@@ -45,10 +45,12 @@ def _build_job_ctx(tmp_path_factory, method_val):
     ssed = sim.to_sse_data(method, simd, exp, 1.0, False)
     cfg = BOConfig(problem.name, 1, 1.0, True, Kernel(1), None, None,
                     3, 3, False, 3, 1, False, None, 1, 1e-7, 1e-7, True, False)
-    # A theta/x-dependent mean (not a flat constant): plot_gp_fit's heat-map contourf
-    # degenerates (vmin == vmax) on a perfectly flat surface, which a real trained GP
-    # would essentially never produce but a constant-mean fake backend would.
-    backend = FakeGPBackend(mean_value=1.0, variance_value=0.25, mean_fn=sum_features)
+    if backend is None:
+        # A theta/x-dependent mean (not a flat constant): plot_gp_fit's heat-map contourf
+        # used to degenerate (vmin == vmax) on a perfectly flat surface -- fixed in
+        # plotting.py, and test_plot_gp_fit_constant_surface_does_not_crash below regression-
+        # tests that fix directly with a genuinely constant mean_fn=None backend.
+        backend = FakeGPBackend(mean_value=1.0, variance_value=0.25, mean_fn=sum_features)
     drv = GPBODriver(cfg, method, sim, exp, simd, ssed, None, None, None, ep, GenMethod(1),
                       backend=backend)
     res_simple, res_gp = drv.run(job=None)
@@ -89,6 +91,16 @@ def job_ctx_method1(tmp_path_factory):
 def job_ctx_method6(tmp_path_factory):
     """Method 6 (Monte Carlo): guards gp_heat_map_data's per-theta sparse-grid/MC EI loop."""
     return _build_job_ctx(tmp_path_factory, method_val=6)
+
+
+@pytest.fixture(scope="module")
+def job_ctx_flat_surface(tmp_path_factory):
+    """A genuinely constant-mean backend (no mean_fn): regression fixture for the
+    plot_gp_fit near-flat-surface crash -- every heat-map z value is bit-identical."""
+    return _build_job_ctx(
+        tmp_path_factory, method_val=7,
+        backend=FakeGPBackend(mean_value=1.0, variance_value=0.25),
+    )
 
 
 @pytest.fixture(scope="module")
@@ -272,6 +284,23 @@ def test_plot_gp_fit_single_z_choice(plotter, job_ctx, z_choice):
     # matplotlib's contourf raised "Input z must be 2D, not 1D". Fixed by always returning
     # lists from __get_z_plot_names_hms, regardless of how many z_choices were requested.
     fig = _capture_shown_figure(lambda: plotter.plot_gp_fit(job_ctx, 1, 1, 0, [z_choice]))
+    assert fig is not None
+    assert len(fig.axes) > 0
+
+
+@pytest.mark.parametrize("z_choices", [
+    ["sse_sim"], ["sse_mean"], ["sse_var"], ["acq"], ["sse_sim", "sse_mean"],
+])
+def test_plot_gp_fit_constant_surface_does_not_crash(plotter, job_ctx_flat_surface, z_choices):
+    # Regression test: a genuinely flat GP predictive surface (vmin == vmax exactly, bit-
+    # identical everywhere) used to crash contourf with "Contour levels must be increasing".
+    # The existing vmin/vmax-nudge guard used a fixed 1e-14 absolute epsilon, which is a
+    # no-op at any magnitude where 1e-14 is below the value's own float64 precision (e.g.
+    # vmin=vmax=337: 337 - 1e-14 rounds right back to 337) -- fixed by scaling the nudge to
+    # the data's own magnitude.
+    fig = _capture_shown_figure(
+        lambda: plotter.plot_gp_fit(job_ctx_flat_surface, 1, 1, 0, z_choices)
+    )
     assert fig is not None
     assert len(fig.axes) > 0
 

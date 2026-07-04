@@ -502,10 +502,16 @@ class Plotters:
                 # Create normalization
                 vmin = np.nanmin(z)
                 vmax = np.nanmax(z)
-                # If all z data are the same, add a small amount of noise to each to allow for plotting
+                # If all z data are the same, nudge vmin/vmax apart so contourf's levels are
+                # strictly increasing. The nudge must scale with the data's own magnitude: a
+                # fixed 1e-14 is far below float64 precision for anything but values near
+                # zero (e.g. vmin=vmax=337 +/- 1e-14 rounds right back to 337), which silently
+                # left vmin == vmax true and crashed downstream with "Contour levels must be
+                # increasing" -- reproduced by a GP with an exactly-flat predictive mean.
                 if vmin == vmax:
-                    vmin -= 1e-14
-                    vmax += 1e-14
+                    eps = max(abs(vmax), 1.0) * 1e-6
+                    vmin -= eps
+                    vmax += eps
 
                 # Check if data scales 3 orders of magnitude
                 mag_diff = (
