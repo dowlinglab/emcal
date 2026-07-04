@@ -768,6 +768,124 @@ class GPEmulator:
         """
         raise NotImplementedError
 
+    def _select_train_test_rows(self, train_idx, test_idx):
+        """
+        Hook for selecting the train/test theta, x, and y rows from self.gp_sim_data given
+        the theta-level train_idx/test_idx produced by self.gp_sim_data.train_test_idx_split.
+
+        Genuinely differs by GP type: Type 1's x_vals is shared experimental data (not
+        indexed at all), while Type 2 must expand the theta-level indices to full
+        (theta, x)-row boolean masks via get_unique_theta() + np.isin before indexing
+        theta_vals/x_vals/y_vals.
+
+        Parameters
+        ----------
+        train_idx: np.ndarray
+        test_idx: np.ndarray
+
+        Returns
+        -------
+        theta_train, x_train, y_train, theta_test, x_test, y_test: np.ndarray
+        """
+        raise NotImplementedError
+
+    def split_train_test(self, sep_fact, shuffle_seed=None):
+        """
+        Splits simulated data into training and testing data
+
+        Parameters
+        ----------
+        sep_fact: float or int
+            The separation factor that decides what percentage of data will be training data. Between 0 and 1.
+        set_seed: int or None
+            Determines seed for randomizations. None if seed is random
+
+        Returns
+        -------
+        train_data: Data
+            Contains all input/output data and bounds for training data
+        test_data: Data
+            Contains all input/output data and bounds for testing data
+
+        Raises
+        ------
+        AssertionError
+            If any of the required parameters are missing or not of the correct type or value
+
+        Notes
+        -----
+        Sets self.train_data, self.test_data, self.feature_train_data, self.feature_test_data, and self.feature_val_data
+        """
+        assert isinstance(
+            sep_fact, (float, int)
+        ), "Separation factor must be float or int > 0"
+        assert 0 < sep_fact <= 1, "sep_fact must be > 0 and less than or equal to 1!"
+        assert isinstance(
+            self.gp_sim_data, Data
+        ), "self.gp_sim_data must be instance of Data"
+        assert np.all(
+            self.gp_sim_data.x_vals is not None
+        ), "Must have simulation x, theta, and y data to create train/test data"
+        assert np.all(
+            self.gp_sim_data.theta_vals is not None
+        ), "Must have simulation x, theta, and y data to create train/test data"
+        assert np.all(
+            self.gp_sim_data.y_vals is not None
+        ), "Must have simulation x, theta, and y data to create train/test data"
+        assert np.all(
+            self.gp_sim_data.bounds_x is not None
+        ), "Must have simulation x bounds to create train/test data"
+        assert np.all(
+            self.gp_sim_data.bounds_theta is not None
+        ), "Must have simulation theta bounds to create train/test data"
+
+        # Get train test idx
+        train_idx, test_idx = self.gp_sim_data.train_test_idx_split(shuffle_seed)
+
+        # Select the train/test theta, x, and y rows (subclass-specific)
+        theta_train, x_train, y_train, theta_test, x_test, y_test = (
+            self._select_train_test_rows(train_idx, test_idx)
+        )
+
+        # Get train data and set it as an instance of the data class
+        train_data = SimulationData(
+            theta_train,
+            x_train,
+            y_train,
+            bounds_theta=self.gp_sim_data.bounds_theta,
+            bounds_x=self.gp_sim_data.bounds_x,
+            sep_fact=sep_fact,
+        )
+        self.train_data = train_data
+
+        # Get test data and set it as an instance of the data class
+        test_data = SimulationData(
+            theta_test,
+            x_test,
+            y_test,
+            bounds_theta=self.gp_sim_data.bounds_theta,
+            bounds_x=self.gp_sim_data.bounds_x,
+            sep_fact=sep_fact,
+        )
+        self.test_data = test_data
+
+        # Set training and validation data features in GPEmulator base class
+        feature_train_data = self.featurize_data(train_data)
+        feature_test_data = self.featurize_data(test_data)
+
+        self.feature_train_data = feature_train_data
+        self.feature_test_data = feature_test_data
+
+        if self.gp_val_data is not None:
+            feature_val_data = self.featurize_data(self.gp_val_data)
+            self.feature_val_data = feature_val_data
+
+        # Set the initial training data for the GP Emulator upon creation
+        if self.train_data_init is None:
+            self.train_data_init = feature_train_data
+
+        return train_data, test_data
+
     def append_training_point(self, new_point_data):
         """
         Adds parameter set which optimizes the acquisition function to the training data set
@@ -825,7 +943,8 @@ class ObjectiveGP(GPEmulator):
     get_dim_gp_data (inherited from GPEmulator): Defines the total dimension of data used by the GP
     _gp_input_dim(): Type 1 GP input is theta only, so the dimension is just theta_dim
     featurize_data(data) (overrides abstract GPEmulator.featurize_data): Collects the featues of the GP into ndarray form from an instance of the Data class
-    split_train_test(sep_fact, seed): Finds the simulation data to use as training/testing data
+    split_train_test(sep_fact, seed) (inherited from GPEmulator): Finds the simulation data to use as training/testing data
+    _select_train_test_rows(train_idx, test_idx): Type 1's x_vals is shared experimental data, so it is not indexed at all
     __eval_gp_sse_var(data, covar): Calculates the GP mean and variance for a given input set
     predict_sse(target=None, data=None, covar=False): GP-predicted SSE mean and (co)variance
     calc_best_error(): Calculates the best error metrics for the GP
@@ -953,107 +1072,23 @@ class ObjectiveGP(GPEmulator):
 
         return feature_eval_data
 
-    def split_train_test(self, sep_fact, shuffle_seed = None):
+    def _select_train_test_rows(self, train_idx, test_idx):
         """
-        Splits simulated data into training and testing data
-
-        Parameters
-        ----------
-        sep_fact: float or int
-            The separation factor that decides what percentage of data will be training data. Between 0 and 1.
-        set_seed: int or None
-            Determines seed for randomizations. None if seed is random
-
-        Returns
-        -------
-        train_data: Data
-            Contains all input/output data and bounds for training data
-        test_data: Data
-            Contains all input/output data and bounds for testing data
-
-        Raises
-        ------
-        AssertionError
-            If any of the required parameters are missing or not of the correct type or value
-
-        Notes
-        -----
-        Sets self.train_data, self.test_data, self.feature_train_data, self.feature_test_data, and self.feature_val_data
+        Type 1's x_vals is shared experimental data, so it is not indexed at all.
         """
-        assert isinstance(
-            sep_fact, (float, int)
-        ), "Separation factor must be float or int > 0"
-        assert 0 < sep_fact <= 1, "sep_fact must be > 0 and less than or equal to 1!"
-        assert isinstance(
-            self.gp_sim_data, Data
-        ), "self.gp_sim_data must be instance of Data"
-        assert np.all(
-            self.gp_sim_data.x_vals is not None
-        ), "Must have simulation x, theta, and y data to create train/test data"
-        assert np.all(
-            self.gp_sim_data.theta_vals is not None
-        ), "Must have simulation x, theta, and y data to create train/test data"
-        assert np.all(
-            self.gp_sim_data.y_vals is not None
-        ), "Must have simulation x, theta, and y data to create train/test data"
-        assert np.all(
-            self.gp_sim_data.bounds_x is not None
-        ), "Must have simulation x bounds to create train/test data"
-        assert np.all(
-            self.gp_sim_data.bounds_theta is not None
-        ), "Must have simulation theta bounds to create train/test data"
-
-        # Get train test idx
-        train_idx, test_idx = self.gp_sim_data.train_test_idx_split(shuffle_seed)
-
-        # Get train data and set it as an instance of the data class
         theta_train = self.gp_sim_data.theta_vals[train_idx]
         x_train = (
             self.gp_sim_data.x_vals
         )  # x_vals for Type 1 is the same as exp_data. No need to index x
         y_train = self.gp_sim_data.y_vals[train_idx]
-        train_data = SimulationData(
-            theta_train,
-            x_train,
-            y_train,
-            bounds_theta=self.gp_sim_data.bounds_theta,
-            bounds_x=self.gp_sim_data.bounds_x,
-            sep_fact=sep_fact,
-        )
-        self.train_data = train_data
 
-        # Get test data and set it as an instance of the data class
         theta_test = self.gp_sim_data.theta_vals[test_idx]
         x_test = (
             self.gp_sim_data.x_vals
         )  # x_vals for Type 1 is the same as exp_data. No need to index x
         y_test = self.gp_sim_data.y_vals[test_idx]
-        test_data = SimulationData(
-            theta_test,
-            x_test,
-            y_test,
-            bounds_theta=self.gp_sim_data.bounds_theta,
-            bounds_x=self.gp_sim_data.bounds_x,
-            sep_fact=sep_fact,
-        )
-        self.test_data = test_data
 
-        # Set training and validation data features in GPEmulator base class
-        feature_train_data = self.featurize_data(train_data)
-        feature_test_data = self.featurize_data(test_data)
-
-        self.feature_train_data = feature_train_data
-        self.feature_test_data = feature_test_data
-
-        if self.gp_val_data is not None:
-            feature_val_data = self.featurize_data(self.gp_val_data)
-            self.feature_val_data = feature_val_data
-
-        # Set the initial training data for the GP Emulator upon creation
-        if self.train_data_init is None:
-            self.train_data_init = feature_train_data
-
-        return train_data, test_data
+        return theta_train, x_train, y_train, theta_test, x_test, y_test
 
     def __eval_gp_sse_var(self, data, covar=False, prediction=None):
         """
@@ -1242,7 +1277,8 @@ class EmulatorGP(GPEmulator):
     get_dim_gp_data (inherited from GPEmulator): Defines the total dimension of input data used by the GP
     _gp_input_dim(): Type 2 GP input is theta and x, so the dimension is x_dim + theta_dim
     featurize_data(data) (overrides abstract GPEmulator.featurize_data): Collects the features of the GP into ndarray form from an instance of the Data class
-    split_train_test(sep_fact, seed): Finds the simulation data to use as training/testing data
+    split_train_test(sep_fact, seed) (inherited from GPEmulator): Finds the simulation data to use as training/testing data
+    _select_train_test_rows(train_idx, test_idx): Expands theta-level indices to full (theta, x)-row boolean masks via get_unique_theta() + np.isin
     __eval_gp_sse_var(data, exp_data, covar): Calculates the SSE mean and variance for a given input set
     predict_sse(target=None, data=None, method=None, exp_data=None, covar=False): GP-predicted SSE mean and (co)variance
     calc_best_error(method, exp_data): Calculates the best error metrics for the GP
@@ -1386,59 +1422,11 @@ class EmulatorGP(GPEmulator):
 
         return feature_eval_data
 
-    def split_train_test(self, sep_fact, shuffle_seed=None):
+    def _select_train_test_rows(self, train_idx, test_idx):
         """
-        Splits the simulation data into GP training/testing data
-
-        Parameters
-        ----------
-        sep_fact: float or int
-            The separation factor that decides what percentage of data will be training data. Between 0 and 1.
-        set_seed: int or None
-            Determines seed for randomizations. None if seed is random
-
-        Returns
-        -------
-        train_data: Data
-            Contains all input/output data and bounds for GP training data
-        test_data: Data
-            Contains all input/output data and bounds for GP testing data
-
-        Raises
-        ------
-        AssertionError
-            If any of the required parameters are missing or not of the correct type or value
-
-        Notes
-        -----
-        Sets self.train_data, self.test_data, self.feature_train_data, self.feature_test_data, and self.feature_val_data
+        Type 2 must expand the theta-level train_idx/test_idx to full (theta, x)-row
+        boolean masks via get_unique_theta() + np.isin before indexing.
         """
-        assert isinstance(
-            sep_fact, (float, int)
-        ), "Separation factor must be float or int > 0"
-        assert 0 < sep_fact <= 1, "sep_fact must be > 0 and less than or equal to 1!"
-        assert isinstance(
-            self.gp_sim_data, Data
-        ), "self.gp_sim_data must be instance of Data"
-        assert np.all(
-            self.gp_sim_data.x_vals is not None
-        ), "Must have simulation x, theta, and y data to create train/test data"
-        assert np.all(
-            self.gp_sim_data.theta_vals is not None
-        ), "Must have simulation x, theta, and y data to create train/test data"
-        assert np.all(
-            self.gp_sim_data.y_vals is not None
-        ), "Must have simulation x, theta, and y data to create train/test data"
-        assert np.all(
-            self.gp_sim_data.bounds_x is not None
-        ), "Must have simulation x bounds to create train/test data"
-        assert np.all(
-            self.gp_sim_data.bounds_theta is not None
-        ), "Must have simulation theta bounds to create train/test data"
-
-        # Find train indeces
-        train_idx, test_idx = self.gp_sim_data.train_test_idx_split(shuffle_seed)
-
         # Find unique theta_values
         unique_theta_vals = self.gp_sim_data.get_unique_theta()
 
@@ -1453,50 +1441,15 @@ class EmulatorGP(GPEmulator):
         test_rows_idx = np.all(test_mask, axis=1)
 
         # Use the indices to select the specific rows from theta_vals
-        # Set training data and set it as an instance of the data class
         theta_train = self.gp_sim_data.theta_vals[train_rows_idx]
         x_train = self.gp_sim_data.x_vals[train_rows_idx]
         y_train = self.gp_sim_data.y_vals[train_rows_idx]
-        train_data = SimulationData(
-            theta_train,
-            x_train,
-            y_train,
-            bounds_theta=self.gp_sim_data.bounds_theta,
-            bounds_x=self.gp_sim_data.bounds_x,
-            sep_fact=sep_fact,
-        )
-        self.train_data = train_data
 
-        # Get test data and set it as an instance of the data class
         theta_test = self.gp_sim_data.theta_vals[test_rows_idx]
         x_test = self.gp_sim_data.x_vals[test_rows_idx]
         y_test = self.gp_sim_data.y_vals[test_rows_idx]
-        test_data = SimulationData(
-            theta_test,
-            x_test,
-            y_test,
-            bounds_theta=self.gp_sim_data.bounds_theta,
-            bounds_x=self.gp_sim_data.bounds_x,
-            sep_fact=sep_fact,
-        )
-        self.test_data = test_data
 
-        # Set training and validation data features in GPEmulator base class
-        feature_train_data = self.featurize_data(train_data)
-        feature_test_data = self.featurize_data(test_data)
-
-        self.feature_train_data = feature_train_data
-        self.feature_test_data = feature_test_data
-
-        if self.gp_val_data is not None:
-            feature_val_data = self.featurize_data(self.gp_val_data)
-            self.feature_val_data = feature_val_data
-
-        # Set the initial training data for the GP Emulator upon creation
-        if self.train_data_init is None:
-            self.train_data_init = feature_train_data
-
-        return train_data, test_data
+        return theta_train, x_train, y_train, theta_test, x_test, y_test
 
     def __eval_gp_sse_var(self, data, exp_data, covar=False, prediction=None):
         """
