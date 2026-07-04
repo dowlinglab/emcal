@@ -209,32 +209,10 @@ class GPBODriver:
         be_metrics: tuple(float, np.ndarray, np.ndarray)
             The min_SSE, param at min_SSE, and squared residuals
         """
-
-        if self.method.is_emulator == False:
-            # Type 1 best error is inferred from training data
-            best_error, be_theta, train_idx = self.gp_emulator.calc_best_error()
-            best_errors_x = None
-            be_data = self.create_data_instance_from_theta(
-                be_theta.flatten(), get_y=False
-            )
-            be_data.y_vals = np.atleast_1d(
-                self.gp_emulator.train_data.y_vals[train_idx]
-            )
-        else:
-            # Type 2 best error must be calculated given the experimental data
-            best_error, be_theta, best_errors_x, train_idx = (
-                self.gp_emulator.calc_best_error(self.method, self.exp_data)
-            )
-            be_data = self.create_data_instance_from_theta(
-                be_theta.flatten(), get_y=False
-            )
-            be_data.y_vals = self.gp_emulator.train_data.y_vals[
-                train_idx[0] : train_idx[1]
-            ]
-
-        be_metrics = best_error, be_theta, best_errors_x
-
-        return be_data, be_metrics
+        return get_best_error(
+            self.gp_emulator, self.method, self.exp_data,
+            self.create_data_instance_from_theta,
+        )
 
     def __make_starting_opt_pts(self, best_error_metrics, rng_seed):
         """
@@ -760,50 +738,10 @@ class GPBODriver:
         AssertionError
             If any of the required parameters are missing or not of the correct type or value
         """
-        rng = self.rng_set
-
-        assert isinstance(theta_array, np.ndarray), "theta_array must be np.ndarray"
-        assert len(theta_array.shape) == 1, "theta_array must be 1D"
-        assert isinstance(
-            self.exp_data.x_vals, (np.ndarray)
-        ), "self.exp_data.x_vals must be np.ndarray"
-
-        # Repeat the theta best array once for each x value
-        # Need to repeat theta_best such that it can be evaluated at every x value in exp_data using simulator.evaluate_model
-        theta_arr_repeated = np.repeat(
-            theta_array.reshape(1, -1), self.exp_data.n_x, axis=0
+        return create_data_instance_from_theta(
+            theta_array, self.method, self.simulator, self.exp_data,
+            self.cs_params.sep_fact, get_y=get_y, w_noise=w_noise, rng=self.rng_set,
         )
-        # Add instance of Data class to theta_best
-        theta_arr_data = CandidateSet(
-            theta_arr_repeated,
-            self.exp_data.x_vals,
-            bounds_theta=self.simulator.bounds_theta_reg,
-            bounds_x=self.simulator.bounds_x,
-            sep_fact=self.cs_params.sep_fact,
-        )
-        if get_y:
-            if w_noise:
-                # Calculate y values and sse for theta_best with noise
-                theta_arr_data.y_vals = self.simulator.evaluate_model(
-                    theta_arr_data, self.simulator.noise_mean, self.simulator.noise_std, rng
-                )
-            else:
-                # Calculate y values and sse for theta_best without noise
-                theta_arr_data.y_vals = self.simulator.evaluate_model(
-                    theta_arr_data, self.simulator.noise_mean, 0, rng
-                )
-
-        # Set the best data to be in sse form if using a type 1 GP
-        if self.method.is_emulator == False:
-            theta_arr_data = self.simulator.to_sse_data(
-                self.method,
-                theta_arr_data,
-                self.exp_data,
-                self.cs_params.sep_fact,
-                not get_y,
-            )
-
-        return theta_arr_data
 
     def __run_bo_iter(self, iteration):
         """
@@ -1413,3 +1351,130 @@ class GPBODriver:
         fileObj2 = gzip.open(savepath2, "wb", compresslevel=2)
         pickled_results2 = pickle.dump(self.gpbo_res_GP, fileObj2)
         fileObj2.close()
+
+
+def create_data_instance_from_theta(
+    theta_array, method, simulator, exp_data, sep_fact, get_y=True, w_noise=False,
+    rng=None,
+):
+    """
+    Creates instance of Data from an np.ndarray parameter set
+
+    Parameters
+    ----------
+    theta_array: np.ndarray
+        Array of parameter values to turn into an instance of Data
+    method: GPBOMethod
+        Class containing GPBO method information
+    simulator: Simulator
+        Class containing values of simulation parameters
+    exp_data: Data
+        Experimental data containing at least exp_data.x_vals
+    sep_fact: float or int
+        The separation factor that decides what percentage of data will be training data
+    get_y: bool, default True
+        Whether to calculate y values for theta_array
+    w_noise: bool, default False
+        Whether to add noise to the y values
+    rng: np.random.Generator or None, default None
+        The random number generator used for noise generation
+
+    Returns
+    --------
+    theta_arr_data: Data
+        Data class instance for the theta_array
+
+    Raises
+    ------
+    AssertionError
+        If any of the required parameters are missing or not of the correct type or value
+    """
+    assert isinstance(theta_array, np.ndarray), "theta_array must be np.ndarray"
+    assert len(theta_array.shape) == 1, "theta_array must be 1D"
+    assert isinstance(
+        exp_data.x_vals, (np.ndarray)
+    ), "exp_data.x_vals must be np.ndarray"
+
+    # Repeat the theta best array once for each x value
+    # Need to repeat theta_best such that it can be evaluated at every x value in exp_data using simulator.evaluate_model
+    theta_arr_repeated = np.repeat(
+        theta_array.reshape(1, -1), exp_data.n_x, axis=0
+    )
+    # Add instance of Data class to theta_best
+    theta_arr_data = CandidateSet(
+        theta_arr_repeated,
+        exp_data.x_vals,
+        bounds_theta=simulator.bounds_theta_reg,
+        bounds_x=simulator.bounds_x,
+        sep_fact=sep_fact,
+    )
+    if get_y:
+        if w_noise:
+            # Calculate y values and sse for theta_best with noise
+            theta_arr_data.y_vals = simulator.evaluate_model(
+                theta_arr_data, simulator.noise_mean, simulator.noise_std, rng
+            )
+        else:
+            # Calculate y values and sse for theta_best without noise
+            theta_arr_data.y_vals = simulator.evaluate_model(
+                theta_arr_data, simulator.noise_mean, 0, rng
+            )
+
+    # Set the best data to be in sse form if using a type 1 GP
+    if method.is_emulator == False:
+        theta_arr_data = simulator.to_sse_data(
+            method,
+            theta_arr_data,
+            exp_data,
+            sep_fact,
+            not get_y,
+        )
+
+    return theta_arr_data
+
+
+def get_best_error(gp_emulator, method, exp_data, create_data_fn):
+    """
+    Helper function to calculate the best error and squared error calculations over x given the method.
+
+    Parameters
+    ----------
+    gp_emulator: GPEmulator
+        The trained GP emulator (ObjectiveGP or EmulatorGP)
+    method: GPBOMethod
+        Class containing GPBO method information
+    exp_data: Data
+        Experimental data containing at least exp_data.x_vals, exp_data.y_vals
+    create_data_fn: callable
+        Callable with signature (theta_array, get_y=...) -> Data, used to build the
+        best-error Data instance from the winning theta (e.g.
+        GPBODriver.create_data_instance_from_theta)
+
+    Returns
+    -------
+    be_data: Data
+        Contains best_error as an instance of the data class
+    be_metrics: tuple(float, np.ndarray, np.ndarray)
+        The min_SSE, param at min_SSE, and squared residuals
+    """
+    if method.is_emulator == False:
+        # Type 1 best error is inferred from training data
+        best_error, be_theta, train_idx = gp_emulator.calc_best_error()
+        best_errors_x = None
+        be_data = create_data_fn(be_theta.flatten(), get_y=False)
+        be_data.y_vals = np.atleast_1d(
+            gp_emulator.train_data.y_vals[train_idx]
+        )
+    else:
+        # Type 2 best error must be calculated given the experimental data
+        best_error, be_theta, best_errors_x, train_idx = (
+            gp_emulator.calc_best_error(method, exp_data)
+        )
+        be_data = create_data_fn(be_theta.flatten(), get_y=False)
+        be_data.y_vals = gp_emulator.train_data.y_vals[
+            train_idx[0] : train_idx[1]
+        ]
+
+    be_metrics = best_error, be_theta, best_errors_x
+
+    return be_data, be_metrics
