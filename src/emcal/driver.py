@@ -941,8 +941,8 @@ class GPBODriver:
             ei_max, iter_max_ei_terms = self.gp_emulator.expected_improvement(**ei_args)
 
         # Turn min_sse_sim value into a float (this makes analyzing data from csvs and dataframes easier)
-        min_sse_gp = float(min_sse)
-        opt_acq_sim = float(acq_sse_theta_data.y_vals)
+        min_sse_gp = float(np.asarray(min_sse).item())
+        opt_acq_sim = float(np.asarray(acq_sse_theta_data.y_vals).item())
 
         # calculate improvement if using Boyle's method to update the exploration bias
         # Improvement is true if the min sim sse found is lower than (not log) best error, otherwise it's false
@@ -988,7 +988,7 @@ class GPBODriver:
             else opt_acq_sim / num_exp_x
         )
         if self.cs_params.get_y_sse:
-            min_sse_sim = float(min_sse_theta_data.y_vals)
+            min_sse_sim = float(np.asarray(min_sse_theta_data.y_vals).item())
             MSE_obj_act = (
                 np.exp(min_sse_sim) / num_exp_x
                 if self.method.log_scaled
@@ -1007,7 +1007,7 @@ class GPBODriver:
             best_error_metrics[0],
             float(self.ep_bias.ep_curr),
             acq_theta_data.theta_vals[0],
-            float(opt_acq),
+            float(np.asarray(opt_acq).item()),
             opt_acq_sim,
             MSE_acq_obj_act,
             min_sse_theta_data.theta_vals[0],

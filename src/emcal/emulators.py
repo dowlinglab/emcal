@@ -287,7 +287,7 @@ class GPEmulator:
         # Set the noise guess or allow gp to tune the noise parameter
         if self.normalize:
             self.scalerY.fit(self.train_data.y_vals.reshape(-1, 1))
-            sclr = np.float64(self.scalerY.scale_)
+            sclr = np.float64(self.scalerY.scale_.item())
         else:
             sclr = 1.0
 
@@ -627,7 +627,7 @@ class GPEmulator:
             gp_mean = self.scalerY.inverse_transform(
                 gp_mean_scl.reshape(-1, 1)
             ).flatten()
-            gp_covar = float(self.scalerY.scale_**2) * gp_covar_scl
+            gp_covar = float(self.scalerY.scale_.item() ** 2) * gp_covar_scl
         else:
             gp_mean = gp_mean_scl
             gp_covar = gp_covar_scl
@@ -1511,7 +1511,7 @@ class EmulatorGP(GPEmulator):
                 # Calculate Variance
                 sse_var[i] = (
                     2 * np.trace(covar_t_t**2) + 4 * res_theta.T @ covar_t_t @ res_theta
-                )
+                ).item()
             if num_uniq_theta == 2 and covar == True:
                 sse_covar = sse_var_all
             else:
