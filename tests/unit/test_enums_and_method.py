@@ -55,3 +55,20 @@ def test_other_enum_members():
     assert [k.name for k in Kernel] == ["MAT_52", "MAT_32", "RBF"]
     assert [g.name for g in GenMethod] == ["LHS", "MESHGRID"]
     assert [e.name for e in EpSchedule] == ["CONSTANT", "DECAY", "BOYLE", "JASRASARIA"]
+
+
+@pytest.mark.parametrize("enum_cls,bad_value", [
+    (Kernel, 0), (Kernel, 4), (Kernel, 5),
+    (GenMethod, 0), (GenMethod, 3),
+    (EpSchedule, 0), (EpSchedule, 5),
+])
+def test_enum_rejects_out_of_range_value(enum_cls, bad_value):
+    # Each enum previously had a class-body validation block meant to reject values outside
+    # its range, but a chained-comparison bug (`Enum in range(...) == False`) made the
+    # `raise ValueError` unreachable -- and even correctly written, it would have run at
+    # class-DEFINITION time, not at construction time, so it could never validate a
+    # caller's value anyway. Removed as dead code (PHASE8_AUDIT.md 3.3): Python's own Enum
+    # constructor already rejects any value not assigned to a member, which is the actual,
+    # correct place this validation happens. This pins that native behavior explicitly.
+    with pytest.raises(ValueError):
+        enum_cls(bad_value)

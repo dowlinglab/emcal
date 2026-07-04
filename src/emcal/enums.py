@@ -38,10 +38,6 @@ class Kernel(Enum):
     3 = RBF
     """
 
-    # Check that values are only 1 to 3
-    if Enum in range(1, 4) == False:
-        raise ValueError("There are only three options for Enum: 1 to 3")
-
     MAT_52 = 1
     MAT_32 = 2
     RBF = 3
@@ -56,10 +52,6 @@ class GenMethod(Enum):
     1 = LHS
     2 = Meshgrid
     """
-
-    # Check that values are only 1 to 2
-    if Enum in range(1, 3) == False:
-        raise ValueError("There are only two options for Enum: 1 (LHS) to 2 (Meshgrid)")
 
     LHS = 1
     MESHGRID = 2
@@ -76,10 +68,6 @@ class EpSchedule(Enum):
     3 = Boyle
     4 = Jasrasaria
     """
-
-    # Ensure that only values 1 to 5 are chosen
-    if Enum in range(1, 4) == False:
-        raise ValueError("There are only four options for Enum: 1 to 4")
 
     CONSTANT = 1
     DECAY = 2

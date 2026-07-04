@@ -1,5 +1,6 @@
 # Import Dependencies
 import os
+import warnings
 import numpy as np
 import pandas as pd
 import copy
@@ -230,7 +231,7 @@ class General_Analysis:
 
         # Make list of parts
         parts = []
-        for key, value in dict_to_use.items():
+        for key, value in sorted_dict.items():
             if isinstance(value, dict):
                 # Recursively format nested dictionaries
                 nested_path = self.make_dir_name_from_criteria(value, True)
@@ -402,10 +403,7 @@ class General_Analysis:
             ".gz",
             ".json",
         ], "File type not supported"
-        # Extract directory name
-        dirname = os.path.dirname(path)
-        # #Make directory if it doesn't already exist
-        # Based on extension, save in different ways
+        # Based on extension, load in different ways
         # Check if csv already exists
         if os.path.exists(path):
             # If so, load the file

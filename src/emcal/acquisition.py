@@ -172,7 +172,7 @@ class ExpectedImprovement:
         dim = len(self.exp_data.y_vals)
         mc_samples = self.samples_mc_sg  # Set 2000 MC samples
 
-        eigvals, eigvecs = np.linalg.eigh(covar)
+        eigvals, _ = np.linalg.eigh(covar)
 
         # Get random standard variables
         random_vars_stand = rng.multivariate_normal(
