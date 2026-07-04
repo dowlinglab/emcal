@@ -1,4 +1,6 @@
 """Tests for the GP-diagnostics API (accuracy + uncertainty calibration + CV)."""
+import matplotlib
+matplotlib.use("Agg")  # headless: must be set before any pyplot import (incl. via diagnostics plots)
 import numpy as np
 import pytest
 
@@ -63,6 +65,76 @@ def test_summary_is_string():
     actual = np.arange(10.0)
     diag = _diagnostics_from_arrays(actual, actual + 0.1, np.ones(10), 20, "x", [])
     assert isinstance(diag.summary(), str) and "calibration" in diag.summary()
+
+
+def _diag_with_std_z(std_z):
+    # Direct dataclass construction: _calibration_verdict only reads self.std_z, so this
+    # pins its three branches exactly rather than relying on a statistical sample landing
+    # in the right bucket.
+    return GPDiagnostics(label="x", n_train=1, n_eval=1, r2=1.0, rmse=0.0, mae=0.0, mape=0.0,
+                         mean_z=0.0, std_z=std_z, reduced_chi2=1.0, coverage={}, nlpd=0.0,
+                         crps=0.0, sharpness=0.0, miscalibration_area=0.0)
+
+
+@pytest.mark.parametrize("std_z,expected", [
+    (0.5, "underconfident"), (1.5, "overconfident"), (1.0, "reasonably calibrated"),
+])
+def test_calibration_verdict_boundaries(std_z, expected):
+    assert expected in _diag_with_std_z(std_z)._calibration_verdict()
+
+
+def test_str_matches_summary():
+    actual = np.arange(10.0)
+    diag = _diagnostics_from_arrays(actual, actual + 0.1, np.ones(10), 20, "x", [])
+    assert str(diag) == diag.summary()
+
+
+# ---- fast: plots on synthetic-array diagnostics (no GP fitting) --------------------
+
+def _synthetic_diag():
+    rng = np.random.default_rng(0)
+    n = 200
+    predicted = rng.uniform(-5, 5, n)
+    sigma = rng.uniform(0.5, 2.0, n)
+    actual = predicted + sigma * rng.standard_normal(n)
+    return _diagnostics_from_arrays(actual, predicted, sigma, n_train=n, label="plots",
+                                    hyper=["ell", 1.0])
+
+
+def test_parity_plot_returns_axes():
+    diag = _synthetic_diag()
+    ax = diag.parity_plot()
+    assert ax.get_xlabel() == "actual"
+    assert ax.get_ylabel() == "GP predicted"
+
+
+def test_calibration_plot_returns_axes():
+    diag = _synthetic_diag()
+    ax = diag.calibration_plot()
+    assert ax.get_xlabel() == "nominal coverage"
+    assert ax.get_ylabel() == "empirical coverage"
+
+
+def test_residual_plot_returns_axes():
+    diag = _synthetic_diag()
+    ax = diag.residual_plot()
+    assert ax.get_xlabel() == "theoretical quantile N(0,1)"
+
+
+def test_plot_all_returns_figure_with_three_axes():
+    diag = _synthetic_diag()
+    fig = diag.plot_all()
+    assert len(fig.axes) == 3
+
+
+def test_plots_accept_an_existing_axes():
+    import matplotlib.pyplot as plt
+
+    diag = _synthetic_diag()
+    _, ax = plt.subplots()
+    assert diag.parity_plot(ax=ax) is ax
+    assert diag.calibration_plot(ax=ax) is ax
+    assert diag.residual_plot(ax=ax) is ax
 
 
 # ---- slow: end-to-end fit + evaluate + CV -------------------------------------------
