@@ -10,7 +10,7 @@ import itertools
 from scipy.stats import qmc
 from .enums import GenMethod
 from .data import ExperimentalData, SimulationData, ObjectiveData
-from ._utils import vector_to_1D_array
+from ._utils import vector_to_1D_array, blockwise_sse
 
 
 class Simulator:
@@ -744,10 +744,7 @@ class Simulator:
             indices = np.arange(0, len_theta, len_x)
             n_blocks = len(indices)
             # Slice y_sim into blocks of size len_x and calculate squared errors for each block
-            y_sim_resh = y_sim.reshape(n_blocks, len_x)
-            block_errors = (y_sim_resh - exp_data.y_vals[np.newaxis, :]) ** 2
-            # Sum squared errors for each block
-            sum_error_sq = np.sum(block_errors, axis=1)
+            sum_error_sq, _ = blockwise_sse(y_sim, exp_data.y_vals, n_blocks, len_x)
             # objective function only log if using 1B
             if method.log_scaled:
                 #Set a minimum error to avoid log(0)

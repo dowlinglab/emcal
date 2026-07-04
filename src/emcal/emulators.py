@@ -12,6 +12,7 @@ from .methods import GPBOMethod
 from .exploration import ExplorationBias
 from .acquisition import ExpectedImprovement
 from .gp_backend import get_backend
+from ._utils import blockwise_sse
 
 
 class GPEmulator:
@@ -1509,12 +1510,8 @@ class EmulatorGP(GPEmulator):
         indices = np.arange(0, len_theta, len_x)
         n_blocks = len(indices)
         # Slice y_sim into blocks of size len_x and calculate squared errors for each block
-        gp_mean_resh = gp_mean.reshape(n_blocks, len_x)
-        block_errors = gp_mean_resh - exp_data.y_vals[np.newaxis, :]
+        sse_mean, block_errors = blockwise_sse(gp_mean, exp_data.y_vals, n_blocks, len_x)
         residuals = block_errors.reshape(gp_covar.shape[0], -1)
-        # Sum squared errors for each block
-        sse_mean_org = np.sum((block_errors) ** 2, axis=1)
-        sse_mean = sse_mean_org.flatten()
 
         # Calculate the sse variance. This SSE_variance CAN'T be negative
         sse_var_all = (
@@ -1602,12 +1599,10 @@ class EmulatorGP(GPEmulator):
         indices = np.arange(0, len_theta, len_x)
         n_blocks = len(indices)
         # Slice y_sim into blocks of size len_x and calculate squared errors for each block
-        train_y_resh = self.train_data.y_vals.reshape(n_blocks, len_x)
-        ind_errors = (train_y_resh - exp_data.y_vals[np.newaxis, :]) ** 2
-
-        # Sum squared errors for each block
-        sse_vals = np.sum(ind_errors, axis=1)
-        sse_train_vals = sse_vals.flatten()
+        sse_train_vals, block_errors = blockwise_sse(
+            self.train_data.y_vals, exp_data.y_vals, n_blocks, len_x
+        )
+        ind_errors = block_errors**2
 
         # List to array
         be_theta = self.train_data.theta_vals[int(np.argmin(sse_train_vals) * len_x)]
@@ -1618,7 +1613,7 @@ class EmulatorGP(GPEmulator):
 
         # Best error is the minimum of these values
         best_error = np.amin(sse_train_vals)
-        best_sq_error = ind_errors[np.argmin(sse_vals)]
+        best_sq_error = ind_errors[np.argmin(sse_train_vals)]
 
         return best_error, be_theta, best_sq_error, org_train_idcs
 
