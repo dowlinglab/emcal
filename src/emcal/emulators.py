@@ -52,6 +52,7 @@ class GPEmulator:
         __feature_test_data,
         __feature_val_data,
         __feature_cand_data,
+        backend=None,
     ):
         """
         Parameters
@@ -84,6 +85,9 @@ class GPEmulator:
             The feature data for the validation data in ndarray form
         __feature_cand_data: np.ndarray
             The feature data for the candidate theta data in ndarray. Used with GPBODriver.__opt_with_scipy()
+        backend: GPBackend or None, default None
+            The GP backend to use. If None, resolved via get_backend(gp_package) (gpflow by
+            default) -- production behavior is unchanged. Tests inject a fake backend here.
 
         Raises
         ------
@@ -159,8 +163,12 @@ class GPEmulator:
 
         # Resolve the GP library backend (gpflow by default). Selecting it here keeps the
         # heavy gpflow/TF import lazy: it only happens when a GPEmulator is constructed.
-        # Override by setting the `gp_package` class/instance attribute before construction.
-        self._backend = get_backend(getattr(self, "gp_package", "gpflow"))
+        # Override by setting the `gp_package` class/instance attribute before construction,
+        # or (e.g. in tests) by passing `backend=` directly to bypass the registry entirely.
+        self._backend = (
+            backend if backend is not None
+            else get_backend(getattr(self, "gp_package", "gpflow"))
+        )
 
         self.rng_rand = np.random.default_rng()
         if self.seed != None:
@@ -742,6 +750,7 @@ class ObjectiveGP(GPEmulator):
         feature_test_data,
         feature_val_data,
         feature_cand_data,
+        backend=None,
     ):
         """
         Parameters
@@ -778,6 +787,8 @@ class ObjectiveGP(GPEmulator):
             The feature data for the validation data in ndarray form
         feature_cand_data: np.ndarray
             The feature data for the candidate theta data in ndarray. Used with GPBODriver.__opt_with_scipy()
+        backend: GPBackend or None, default None
+            The GP backend to use. If None, resolved via get_backend (gpflow by default).
 
         Raises
         ------
@@ -801,6 +812,7 @@ class ObjectiveGP(GPEmulator):
             feature_test_data,
             feature_val_data,
             feature_cand_data,
+            backend=backend,
         )
         # Add training and testing data as child features
         self.train_data = train_data
@@ -1228,6 +1240,7 @@ class EmulatorGP(GPEmulator):
         feature_test_data,
         feature_val_data,
         feature_cand_data,
+        backend=None,
     ):
         """
         Parameters
@@ -1264,6 +1277,8 @@ class EmulatorGP(GPEmulator):
             The feature data for the validation data in ndarray form
         feature_cand_data: np.ndarray
             The feature data for the candidate theta data in ndarray. Used with GPBODriver.__opt_with_scipy()
+        backend: GPBackend or None, default None
+            The GP backend to use. If None, resolved via get_backend (gpflow by default).
 
         Raises
         ------
@@ -1287,6 +1302,7 @@ class EmulatorGP(GPEmulator):
             feature_test_data,
             feature_val_data,
             feature_cand_data,
+            backend=backend,
         )
         # Set training and testing data as child class specific objects
         assert (
@@ -1887,6 +1903,7 @@ def build_gp_emulator(
     normalize,
     simulator_noise_std,
     n_x,
+    backend=None,
 ):
     """
     Construct the right GP emulator (ObjectiveGP or EmulatorGP) for a method.
@@ -1910,6 +1927,8 @@ def build_gp_emulator(
     n_x : int
         Number of experimental conditions (exp_data.n_x); sets the chi-squared noise scale
         for the standard (objective) GP.
+    backend : GPBackend or None, default None
+        The GP backend to use. If None, resolved via get_backend (gpflow by default).
 
     Returns
     -------
@@ -1929,6 +1948,7 @@ def build_gp_emulator(
         gp_emulator = ObjectiveGP(
             all_gp_data, all_val_data, None, None, None, kernel, lenscl, noise_std,
             outputscl, retrain_GP, seed, normalize, None, None, None, None,
+            backend=backend,
         )
     else:
         all_gp_data = sim_data
@@ -1937,5 +1957,6 @@ def build_gp_emulator(
         gp_emulator = EmulatorGP(
             all_gp_data, all_val_data, None, None, None, kernel, lenscl, noise_std,
             outputscl, retrain_GP, seed, normalize, None, None, None, None,
+            backend=backend,
         )
     return gp_emulator

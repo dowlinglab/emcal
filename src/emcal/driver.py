@@ -62,6 +62,7 @@ class GPBODriver:
         gp_emulator,
         ep_bias,
         gen_meth_theta,
+        backend=None,
     ):
         """
         Parameters
@@ -88,6 +89,10 @@ class GPBODriver:
             Class containing exploration parameter info
         gen_meth_theta: GenMethod or None
             The method by which simulation data is generated. For heat map making
+        backend: GPBackend or None, default None
+            The GP backend passed through to __gen_emulator's build_gp_emulator call. If
+            None, resolved via get_backend (gpflow by default) -- production behavior is
+            unchanged. Tests inject a fake backend here.
 
         Raises
         ------
@@ -135,6 +140,7 @@ class GPBODriver:
         self.gp_emulator = gp_emulator
         self.ep_bias = ep_bias
         self.gen_meth_theta = gen_meth_theta
+        self._backend = backend
         self.bo_iter_term_frac = 0.3  # The fraction of iterations after which to terminate bo if no sse improvement is made
         self.sse_penalty = 1e7  # The penalty the __scipy_opt function gets for choosing nan theta values
         self.sg_mc_samples = 2000  # This can be changed at will
@@ -192,6 +198,7 @@ class GPBODriver:
             self.cs_params.normalize,
             self.simulator.noise_std,
             self.exp_data.n_x,
+            backend=self._backend,
         )
 
     def __get_best_error(self):
