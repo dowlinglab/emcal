@@ -140,6 +140,11 @@ class GPBODriver:
         self.sg_mc_samples = 2000  # This can be changed at will
         # This object is used for optimization
         self.__min_obj_class = None
+        # Companions to __min_obj_class, set together with it: the objective/acq value and the
+        # GPPrediction of whichever candidate is currently winning. Read instead of
+        # __min_obj_class.acq / re-deriving a prediction from __min_obj_class's Data fields.
+        self.__min_obj_val = None
+        self.__min_obj_prediction = None
         # self.reset_rng()
 
     def __make_BO_results_temp(self, results_df, why_term, max_ei_details_df, list_gp_emulator_class):
@@ -362,6 +367,8 @@ class GPBODriver:
             If any of the required parameters are missing or not of the correct type or value
         """
         self.__min_obj_class = None
+        self.__min_obj_val = None
+        self.__min_obj_prediction = None
 
         assert isinstance(opt_obj, str), "opt_obj must be string!"
         assert opt_obj in [
@@ -405,8 +412,9 @@ class GPBODriver:
                 # If the intialized theta causes scipy.optimize to choose nan values, skip it
                 pass
 
-        best_val = self.__min_obj_class.acq
+        best_val = self.__min_obj_val
         best_class = self.__min_obj_class
+        best_prediction = self.__min_obj_prediction
 
         best_class_simple = self.create_data_instance_from_theta(
             self.__min_obj_class.theta_vals[0], get_y=get_y, w_noise=w_noise
@@ -414,7 +422,7 @@ class GPBODriver:
         if get_y:
             best_class.y_vals = best_class_simple.y_vals
 
-        return best_val, best_class
+        return best_val, best_class, best_prediction
 
     def __scipy_fxn(self, theta, opt_obj, best_error_metrics):
         """
@@ -517,30 +525,45 @@ class GPBODriver:
                     )
                 obj = -1 * ei_output[0]
 
+            # Companion to __min_obj_class.acq: for neg_ei, __eval_gp_ei's internal
+            # `sim_data.acq = ei` has already set cand_data.acq to the raw (un-negated) ei
+            # value by this point; for sse/E_sse, .acq isn't set until the explicit write
+            # below, so this mirrors None here -- matches .acq's actual value at each point
+            # where it's read in the comparisons that follow.
+            cand_acq_val = ei_output[0] if opt_obj == "neg_ei" else None
+
             set_acq_val = True
 
             # Save candidate class if there is no current value
             if self.__min_obj_class == None:
                 self.__min_obj_class = self.gp_emulator.cand_data
+                self.__min_obj_val = cand_acq_val
+                self.__min_obj_prediction = pred
             # The sse/lcb objective is smaller than what we have so far
-            elif self.__min_obj_class.acq > obj and opt_obj != "neg_ei":
+            elif self.__min_obj_val > obj and opt_obj != "neg_ei":
                 self.__min_obj_class = self.gp_emulator.cand_data
+                self.__min_obj_val = cand_acq_val
+                self.__min_obj_prediction = pred
             # The ei objective is larger than what we have so far
-            elif self.__min_obj_class.acq * -1 > obj and opt_obj == "neg_ei":
+            elif self.__min_obj_val * -1 > obj and opt_obj == "neg_ei":
                 self.__min_obj_class = self.gp_emulator.cand_data
+                self.__min_obj_val = cand_acq_val
+                self.__min_obj_prediction = pred
             # For SSE, if the objective is the same, randomly choose between the two (since sse is an objective fxn)
             elif (
-                np.isclose(self.__min_obj_class.acq, obj, rtol=1e-7)
+                np.isclose(self.__min_obj_val, obj, rtol=1e-7)
                 and opt_obj == "sse"
             ):
                 # random_number = rng.randint(0, 1)
                 random_number = rng.integers(0,1)
                 if random_number > 0:
                     self.__min_obj_class = self.gp_emulator.cand_data
+                    self.__min_obj_val = cand_acq_val
+                    self.__min_obj_prediction = pred
                 else:
                     set_acq_val = False
             # For EI/E_sse (acquisition fxns) switch to the value farthest from any training data
-            elif np.isclose(self.__min_obj_class.acq, obj, rtol=1e-7):
+            elif np.isclose(self.__min_obj_val, obj, rtol=1e-7):
                 # Get the distance between the candidate and the current min_obj_class value and the training data
                 dist_old = (
                     distance.cdist(
@@ -563,12 +586,15 @@ class GPBODriver:
                 # If the distance of the new point is larger or equal to the old point, keep the new point
                 if dist_new >= dist_old:
                     self.__min_obj_class = self.gp_emulator.cand_data
+                    self.__min_obj_val = cand_acq_val
+                    self.__min_obj_prediction = pred
                 else:
                     set_acq_val = False
             else:
                 set_acq_val = False
 
             if set_acq_val and opt_obj != "neg_ei":
+                self.__min_obj_val = obj
                 self.__min_obj_class.acq = obj
 
         return obj
@@ -862,11 +888,11 @@ class GPBODriver:
 
         # Call optimize E[SSE] or log(E[SSE]) objective function
         # Note if we didn't want actual sse values, we would have to set get_y_sse = False
-        min_sse, min_theta_data = self.__opt_with_scipy("sse", get_y = self.cs_params.get_y_sse, w_noise = self.cs_params.w_noise)
+        min_sse, min_theta_data, min_sse_prediction = self.__opt_with_scipy("sse", get_y = self.cs_params.get_y_sse, w_noise = self.cs_params.w_noise)
 
         # Call optimize EI acquistion fxn (If not using E[SSE])
         if self.method.method_name.value != 7:
-            opt_acq, acq_theta_data = self.__opt_with_scipy("neg_ei", get_y = True, w_noise = self.cs_params.w_noise)
+            opt_acq, acq_theta_data, best_prediction = self.__opt_with_scipy("neg_ei", get_y = True, w_noise = self.cs_params.w_noise)
             if self.method.is_emulator == True:
                 ei_args = dict(
                     data=acq_theta_data,
@@ -875,6 +901,7 @@ class GPBODriver:
                     best_error_metrics=best_error_metrics,
                     method=self.method,
                     sg_mc_samples=self.sg_mc_samples,
+                    gp_prediction=best_prediction,
                 )
             else:
                 ei_args = dict(
@@ -882,9 +909,10 @@ class GPBODriver:
                     exp_data=self.exp_data,
                     ep_bias=self.ep_bias,
                     best_error_metrics=best_error_metrics,
+                    gp_prediction=best_prediction,
                 )
         else:
-            opt_acq, acq_theta_data = self.__opt_with_scipy("E_sse", get_y = True, w_noise = self.cs_params.w_noise)
+            opt_acq, acq_theta_data, best_prediction = self.__opt_with_scipy("E_sse", get_y = True, w_noise = self.cs_params.w_noise)
 
         # If type 2, turn it into sse_data
         # Set the best data to be in sse form if using a type 2 GP and find the min sse
