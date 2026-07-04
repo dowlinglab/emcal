@@ -718,6 +718,60 @@ class GPEmulator:
             raise ValueError("target must be 'test', 'val', 'cand', or None")
         return data
 
+    def _extend_train_data_arrays(self, new_point_data):
+        """
+        Hook for growing any train_data fields beyond theta_vals/y_vals when a new
+        training point is appended. No-op by default (ObjectiveGP's training data is
+        theta_vals/y_vals only); EmulatorGP overrides this to also grow x_vals (Type-2
+        carries per-point x alongside theta).
+        """
+        pass
+
+    def append_training_point(self, new_point_data):
+        """
+        Adds parameter set which optimizes the acquisition function to the training data set
+
+        Parameters
+        ----------
+        new_point_data: Data
+            The class containing the data relevant to argmin(acq. func.) for the GP
+
+        Raises
+        ------
+        AssertionError
+            If any of the required parameters are missing or not of the correct type or value
+
+        Notes
+        ------
+        This function updates self.train_data.theta_vals, self.train_data.y_vals (and, for
+        EmulatorGP, self.train_data.x_vals via _extend_train_data_arrays), and
+        self.feature_train_data
+        """
+        assert self.train_data is not None, "self.train_data must be Data"
+        assert isinstance(self.train_data, Data), "self.train_data must be Data"
+        assert isinstance(new_point_data, Data), "new_point_data must be Data"
+        assert all(
+            isinstance(var, np.ndarray)
+            for var in [self.train_data.theta_vals, self.train_data.y_vals]
+        ), "self.train_data.theta_vals and self.train_data.y_vals must be np.ndarray"
+        assert all(
+            isinstance(var, np.ndarray)
+            for var in [new_point_data.theta_vals, new_point_data.y_vals]
+        ), "new_point_data.theta_vals and new_point_data.y_vals must be np.ndarray"
+
+        # Update training theta, x, and y separately
+        self.train_data.theta_vals = np.vstack(
+            (self.train_data.theta_vals, new_point_data.theta_vals)
+        )
+        self._extend_train_data_arrays(new_point_data)
+        self.train_data.y_vals = np.concatenate(
+            (self.train_data.y_vals, new_point_data.y_vals)
+        )
+        feature_train_data = self.featurize_data(self.train_data)
+
+        # Reset training data feature array
+        self.feature_train_data = feature_train_data
+
 
 class ObjectiveGP(GPEmulator):
     """
@@ -735,7 +789,8 @@ class ObjectiveGP(GPEmulator):
     calc_best_error(): Calculates the best error metrics for the GP
     __eval_gp_ei(sim_data, exp_data, ep_bias, best_error_metrics): Evaluates the expected improvement for the GP
     expected_improvement(target=None, data=None, exp_data=None, ep_bias=None, best_error_metrics=None): Expected improvement acquisition
-    append_training_point(theta_best_sse_data): Adds the next parameter set to the training data
+
+    append_training_point (inherited from GPEmulator): Adds the next parameter set to the training data
     """
 
     # Class variables and attributes
@@ -1138,47 +1193,6 @@ class ObjectiveGP(GPEmulator):
 
         return self.__eval_gp_ei(data, exp_data, ep_bias, best_error_metrics, gp_prediction=gp_prediction)
 
-    def append_training_point(self, theta_best_sse_data):
-        """
-        Adds parameter set which optimizes the acquisition function to the training data set
-
-        Parameters
-        ----------
-        theta_best_sse_data: Data
-            The class containing the data relavent to argmin(acq. func.) for a Type 1 (standard) GP
-
-        Raises
-        ------
-        AssertionError
-            If any of the required parameters are missing or not of the correct type or value
-
-        Notes
-        ------
-        This function updates self.train_data.theta_vals, self.train_data.y_vals, and self.feature_train_data
-        """
-        assert self.train_data is not None, "self.train_data must be Data"
-        assert isinstance(self.train_data, Data), "self.train_data must be Data"
-        assert isinstance(theta_best_sse_data, Data), "theta_best_sse_data must be Data"
-        assert all(
-            isinstance(var, np.ndarray)
-            for var in [self.train_data.theta_vals, self.train_data.y_vals]
-        ), "self.train_data.theta_vals and self.train_data.y_vals must be np.ndarray"
-        assert all(
-            isinstance(var, np.ndarray)
-            for var in [theta_best_sse_data.theta_vals, theta_best_sse_data.y_vals]
-        ), "theta_best_sse_data.theta_vals and self.theta_best_sse_data.y_vals must be np.ndarray"
-        # Update training theta, x, and y separately
-        self.train_data.theta_vals = np.vstack(
-            (self.train_data.theta_vals, theta_best_sse_data.theta_vals)
-        )
-        self.train_data.y_vals = np.concatenate(
-            (self.train_data.y_vals, theta_best_sse_data.y_vals)
-        )
-        feature_train_data = self.featurize_data(self.train_data)
-
-        # Reset training data feature array
-        self.feature_train_data = feature_train_data
-
 
 class EmulatorGP(GPEmulator):
     """
@@ -1196,7 +1210,7 @@ class EmulatorGP(GPEmulator):
     calc_best_error(method, exp_data): Calculates the best error metrics for the GP
     __eval_gp_ei(sim_data, exp_data, ep_bias, best_error_metrics, method, sg_mc_samples): Evaluates the expected improvement for the GP
     expected_improvement(target=None, data=None, exp_data=None, ep_bias=None, best_error_metrics=None, method=None, sg_mc_samples=2000): Expected improvement acquisition
-    append_training_point(theta_best_data): Adds the next parameter set to the training data
+    _extend_train_data_arrays(new_point_data): Grows x_vals too when append_training_point (inherited from GPEmulator) adds a point
     """
 
     # Class variables and attributes
@@ -1786,50 +1800,11 @@ class EmulatorGP(GPEmulator):
             gp_prediction=gp_prediction,
         )
 
-    def append_training_point(self, theta_best_data):
-        """
-        Adds parameter set which optimizes the acquisition function to the training data set
-
-        Parameters
-        ----------
-        theta_best_data: Data
-            The class containing the data relavent to argmin(acq. func.) for a Type 1 (standard) GP
-
-        Raises
-        ------
-        AssertionError
-            If any of the required parameters are missing or not of the correct type or value
-
-        Notes
-        ------
-        This function updates self.train_data.theta_vals, self.train_data.x_vals, self.train_data.y_vals, and self.feature_train_data
-        """
-        assert self.train_data is not None, "self.train_data must be Data"
-        assert isinstance(self.train_data, Data), "self.train_data must be Data"
-        assert isinstance(theta_best_data, Data), "theta_best_data must be Data"
-        assert all(
-            isinstance(var, np.ndarray)
-            for var in [self.train_data.theta_vals, self.train_data.y_vals]
-        ), "self.train_data.theta_vals and self.train_data.y_vals must be np.ndarray"
-        assert all(
-            isinstance(var, np.ndarray)
-            for var in [theta_best_data.theta_vals, theta_best_data.y_vals]
-        ), "self.train_data.theta_vals and self.train_data.y_vals must be np.ndarray"
-
-        # Update training theta, x, and y separately
-        self.train_data.theta_vals = np.vstack(
-            (self.train_data.theta_vals, theta_best_data.theta_vals)
-        )
+    def _extend_train_data_arrays(self, new_point_data):
+        """Type-2 also carries per-point x alongside theta, so grow x_vals here too."""
         self.train_data.x_vals = np.vstack(
-            (self.train_data.x_vals, theta_best_data.x_vals)
+            (self.train_data.x_vals, new_point_data.x_vals)
         )
-        self.train_data.y_vals = np.concatenate(
-            (self.train_data.y_vals, theta_best_data.y_vals)
-        )
-        feature_train_data = self.featurize_data(self.train_data)
-
-        # Reset training data feature array
-        self.feature_train_data = feature_train_data
 
 
 ##Again, composition instead of inheritance
