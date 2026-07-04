@@ -291,7 +291,6 @@ class GPBODriver:
         pred = self.gp_emulator.predict(
             data=sp_data, featurized_data=feat_sp_data
         )
-        sp_data.gp_mean, sp_data.gp_var = pred
 
         # Evaluate GP SSE and SSE_Var (This is the 2nd slowest step). Reuses `pred` (predict()
         # is the slowest step) instead of re-reading data.gp_mean/data.gp_covar.

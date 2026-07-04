@@ -655,7 +655,7 @@ class GPEmulator:
 
     def predict(self, target=None, data=None, featurized_data=None, covar=False):
         """
-        Evaluate the GP posterior mean and (co)variance and store them on the data.
+        Evaluate the GP posterior mean and (co)variance.
 
         Collapses the former eval_gp_mean_var_{test,val,cand,misc}. Choose a built-in
         `target` ("test", "val", or "cand") to evaluate the emulator's own split, or pass
@@ -675,13 +675,10 @@ class GPEmulator:
 
         Returns
         -------
-        gp_mean : np.ndarray
-        var_return : np.ndarray
-            Variance (covar=False) or covariance (covar=True).
-
-        Notes
-        -----
-        Populates data.gp_mean, data.gp_var, and data.gp_covar.
+        GPPrediction
+            .mean, .variance, and .covariance are always populated (the backend computes
+            the full covariance unconditionally); `covar` only selects which one appears
+            as the second element of the legacy 2-tuple iteration.
         """
         if target == "test":
             data, featurized_data = self.test_data, self.feature_test_data
@@ -702,10 +699,6 @@ class GPEmulator:
         assert isinstance(covar, bool), "covar must be bool!"
 
         gp_mean, gp_var, gp_covar = self.__eval_gp_mean_var(featurized_data)
-
-        data.gp_mean = gp_mean
-        data.gp_var = gp_var
-        data.gp_covar = gp_covar
 
         return GPPrediction(gp_mean, variance=gp_var, covariance=gp_covar, as_covar=covar)
 
@@ -977,67 +970,49 @@ class ObjectiveGP(GPEmulator):
         covar: bool, default False
             Determines whether covariance (True) or variance (False) of sse is returned with the gp mean
         prediction: GPPrediction or None, default None
-            If given, its .mean/.variance/.covariance are used instead of reading
-            data.gp_mean/data.gp_var/data.gp_covar (avoids re-deriving an already-computed
-            prediction). If None, falls back to the data.gp_* read (transitional).
+            The GP mean/variance/covariance to derive the sse from. If None, computed here
+            via self.predict(data=data).
 
         Returns
         --------
-        data.sse: np.ndarray
+        sse: np.ndarray
             The sse derived from gp_mean evaluated over the data
-        var_return: np.ndarray
-            The sse (co)variance derived from the GP model's (co)variance evaluated over the data
+        sse_var: np.ndarray
+        sse_covar: np.ndarray
 
         Raises
         ------
         AssertionError
             If covar is not a boolean
-
-        Notes
-        ------
-        Populates data.sse, data.sse_var, and data.sse_covar with the GP mean, variance, and covariance (standard GPBO emulates objecive function)
         """
         assert isinstance(covar, bool), "covar must be bool!"
+        if prediction is None:
+            prediction = self.predict(data=data)
         # For type 1, sse is the gp_mean
-        if prediction is not None:
-            data.sse = prediction.mean
-            data.sse_var = prediction.variance
-            data.sse_covar = prediction.covariance
-        else:
-            data.sse = data.gp_mean
-            data.sse_var = data.gp_var
-            data.sse_covar = data.gp_covar
+        sse = prediction.mean
+        sse_var = prediction.variance
+        sse_covar = prediction.covariance
 
-        if covar == False:
-            var_return = data.sse_var
-        else:
-            var_return = data.sse_covar
-
-        return data.sse, var_return
+        return sse, sse_var, sse_covar
 
     def predict_sse(self, target=None, data=None, covar=False, prediction=None):
         """
         GP-predicted SSE mean and (co)variance (standard/objective GP).
 
         Collapses the former eval_gp_sse_var_{test,val,cand,misc}. For the objective GP
-        the SSE *is* the GP output, so this reads the GP mean/variance already stored on
-        the data (call predict() first). Choose a built-in `target` ("test"/"val"/"cand")
-        or pass an arbitrary `data`.
+        the SSE *is* the GP output. Choose a built-in `target` ("test"/"val"/"cand") or
+        pass an arbitrary `data`.
 
         Parameters
         ----------
         prediction: GPPrediction or None, default None
             The GPPrediction returned by a prior predict() call on the same data, reused
-            instead of re-reading data.gp_mean/data.gp_var/data.gp_covar. Optional and
-            purely additive -- omitting it preserves the current data.gp_* read.
+            instead of computing a fresh one. If None, this calls predict(data=data)
+            internally.
 
         Returns
         -------
-        sse_mean, sse_var : np.ndarray  (variance, or covariance if covar=True)
-
-        Notes
-        -----
-        Populates data.sse, data.sse_var, data.sse_covar.
+        GPPrediction
         """
         if target == "test":
             data = self.test_data
@@ -1049,16 +1024,9 @@ class ObjectiveGP(GPEmulator):
             raise ValueError("target must be 'test', 'val', 'cand', or None")
 
         assert isinstance(data, Data), "data must be type Data"
-        assert np.all(
-            data.gp_mean is not None
-        ), "Must have the GP's mean and standard deviation. Hint: Use predict()"
-        assert np.all(
-            data.gp_var is not None
-        ), "Must have the GP's mean and standard deviation. Hint: Use predict()"
 
-        self.__eval_gp_sse_var(data, covar, prediction=prediction)  # populates data.sse / sse_var / sse_covar
-        return GPPrediction(data.sse, variance=data.sse_var,
-                            covariance=data.sse_covar, as_covar=covar)
+        sse, sse_var, sse_covar = self.__eval_gp_sse_var(data, covar, prediction=prediction)
+        return GPPrediction(sse, variance=sse_var, covariance=sse_covar, as_covar=covar)
 
     def calc_best_error(self):
         """
@@ -1110,11 +1078,10 @@ class ObjectiveGP(GPEmulator):
         best_error_metrics: tuple(float, np.ndarray, np.ndarray)
             The best error, best error parameter set, and best_error_x values of the method. Hint use calc_best_error()
         gp_prediction: GPPrediction or None, default None
-            If given, its .mean/.covariance are used instead of reading sim_data.gp_mean/
-            sim_data.gp_covar (avoids re-deriving an already-computed prediction). .covariance
-            is always used regardless of the covar flag predict() was called with -- it
-            computes the full covariance unconditionally. If None, falls back to the
-            sim_data.gp_* read (transitional).
+            The GP mean/covariance to evaluate EI at. If None, computed here via
+            self.predict(data=sim_data). .covariance is always used regardless of the covar
+            flag predict() was called with -- it computes the full covariance
+            unconditionally.
 
         Returns
         -------
@@ -1122,18 +1089,14 @@ class ObjectiveGP(GPEmulator):
             The expected improvement of all the data in test_data
         ei_terms_df: pd.DataFrame
             pandas dataframe containing the values of calculations associated with ei for the parameter sets
-
-        Notes
-        -----
-        This function also sets sim_data.acq to the expected improvement
         """
-        gp_mean = gp_prediction.mean if gp_prediction is not None else sim_data.gp_mean
-        gp_covar = gp_prediction.covariance if gp_prediction is not None else sim_data.gp_covar
+        if gp_prediction is None:
+            gp_prediction = self.predict(data=sim_data)
         # Call instance of expected improvement class
         ei_class = ExpectedImprovement(
             ep_bias,
-            gp_mean,
-            gp_covar,
+            gp_prediction.mean,
+            gp_prediction.covariance,
             exp_data,
             best_error_metrics,
             self.seed,
@@ -1141,8 +1104,6 @@ class ObjectiveGP(GPEmulator):
         )
         # Call correct method of ei calculation
         ei, ei_terms_df = ei_class.compute()
-        # Add ei data to validation data class
-        sim_data.acq = ei
 
         return ei, ei_terms_df
 
@@ -1159,8 +1120,8 @@ class ObjectiveGP(GPEmulator):
         ----------
         gp_prediction: GPPrediction or None, default None
             The GPPrediction returned by a prior predict() call on the same data, reused
-            instead of re-reading data.gp_mean/data.gp_covar. Optional and purely additive --
-            omitting it preserves the current data.gp_* read.
+            instead of computing a fresh one. If None, this calls predict(data=data)
+            internally.
 
         Returns
         -------
@@ -1532,33 +1493,28 @@ class EmulatorGP(GPEmulator):
         covar: bool, default False
             Determines whether covariance (True) or variance (False) of sse is returned with the gp mean
         prediction: GPPrediction or None, default None
-            If given, its .mean/.covariance are used instead of reading data.gp_mean/
-            data.gp_covar (avoids re-deriving an already-computed prediction). .covariance
-            is always used regardless of the covar flag -- predict() computes the full
-            covariance unconditionally (full_cov=True), so it's always valid here. If None,
-            falls back to the data.gp_* read (transitional).
+            The GP mean/covariance to derive the sse from. If None, computed here via
+            self.predict(data=data). .covariance is always used regardless of the covar
+            flag -- predict() computes the full covariance unconditionally (full_cov=True).
 
         Returns
         --------
         sse_mean: tensor
             The sse derived from gp_mean evaluated over all state points
-        var_return: tensor
-            The sse (co)variance derived from the GP model's variance evaluated over all state points
+        sse_var: tensor
+        sse_covar: tensor or None
 
         Raises
         ------
         AssertionError
             If covar is not a boolean
-
-        Notes
-        ------
-        Also populates data.sse, data.sse_var, and data.sse_covar
-
         """
         assert isinstance(covar, bool), "covar must be bool!"
 
-        gp_mean = prediction.mean if prediction is not None else data.gp_mean
-        gp_covar = prediction.covariance if prediction is not None else data.gp_covar
+        if prediction is None:
+            prediction = self.predict(data=data)
+        gp_mean = prediction.mean
+        gp_covar = prediction.covariance
 
         # Find length of theta and number of unique x in data arrays
         len_theta = data.n_theta
@@ -1604,17 +1560,7 @@ class EmulatorGP(GPEmulator):
             else:
                 sse_covar = None
 
-        # Set class parameters
-        data.sse = sse_mean
-        data.sse_var = sse_var
-        data.sse_covar = sse_covar
-
-        if covar == False:
-            var_return = data.sse_var
-        else:
-            var_return = data.sse_covar
-
-        return sse_mean, var_return
+        return sse_mean, sse_var, sse_covar
 
     def predict_sse(self, target=None, data=None, method=None, exp_data=None, covar=False,
                      prediction=None):
@@ -1623,23 +1569,18 @@ class EmulatorGP(GPEmulator):
 
         Collapses the former eval_gp_sse_var_{test,val,cand,misc}. The emulator GP models
         the model output, so deriving the SSE needs the `method` and experimental `exp_data`.
-        Choose a built-in `target` ("test"/"val"/"cand") or pass an arbitrary `data`; call
-        predict() first to populate the GP mean/variance.
+        Choose a built-in `target` ("test"/"val"/"cand") or pass an arbitrary `data`.
 
         Parameters
         ----------
         prediction: GPPrediction or None, default None
             The GPPrediction returned by a prior predict() call on the same data, reused
-            instead of re-reading data.gp_mean/data.gp_var/data.gp_covar. Optional and
-            purely additive -- omitting it preserves the current data.gp_* read.
+            instead of computing a fresh one. If None, this calls predict(data=data)
+            internally.
 
         Returns
         -------
-        sse_mean, sse_var : np.ndarray  (variance, or covariance if covar=True)
-
-        Notes
-        -----
-        Populates data.sse, data.sse_var, data.sse_covar.
+        GPPrediction
         """
         if target == "test":
             data = self.test_data
@@ -1663,21 +1604,14 @@ class EmulatorGP(GPEmulator):
             data.theta_vals is not None
         ), "data.x_vals and data.theta_vals must exist!"
         assert np.all(
-            data.gp_mean is not None
-        ), "data.gp_mean and data.gp_var must exist. Hint: Use predict()"
-        assert np.all(
-            data.gp_var is not None
-        ), "data.gp_mean and data.gp_var must exist. Hint: Use predict()"
-        assert np.all(
             exp_data.x_vals is not None
         ), "exp_data.x_vals and exp_data.y_vals must exist!"
         assert np.all(
             exp_data.y_vals is not None
         ), "exp_data.x_vals and exp_data.y_vals must exist!"
 
-        self.__eval_gp_sse_var(data, method, exp_data, covar, prediction=prediction)  # populates data.sse / sse_var / sse_covar
-        return GPPrediction(data.sse, variance=data.sse_var,
-                            covariance=data.sse_covar, as_covar=covar)
+        sse_mean, sse_var, sse_covar = self.__eval_gp_sse_var(data, method, exp_data, covar, prediction=prediction)
+        return GPPrediction(sse_mean, variance=sse_var, covariance=sse_covar, as_covar=covar)
 
     def calc_best_error(self, method, exp_data):
         """
@@ -1783,11 +1717,10 @@ class EmulatorGP(GPEmulator):
         sg_mc_samples: int, default 2000
             Number of samples to use for the Tasmanian sparse grid or Monte Carlo approaches
         gp_prediction: GPPrediction or None, default None
-            If given, its .mean/.covariance are used instead of reading sim_data.gp_mean/
-            sim_data.gp_covar (avoids re-deriving an already-computed prediction). .covariance
-            is always used regardless of the covar flag predict() was called with -- it
-            computes the full covariance unconditionally. If None, falls back to the
-            sim_data.gp_* read (transitional).
+            The GP mean/covariance to evaluate EI at. If None, computed here via
+            self.predict(data=sim_data). .covariance is always used regardless of the covar
+            flag predict() was called with -- it computes the full covariance
+            unconditionally.
 
         Returns
         -------
@@ -1800,10 +1733,6 @@ class EmulatorGP(GPEmulator):
         ------
         AssertionError
             If any of the required parameters are missing or not of the correct type or value
-
-        Note:
-        -----
-        This function also sets sim_data.acq to the expected improvement values
         """
         assert (
             6 >= method.method_name.value >= 3
@@ -1813,13 +1742,13 @@ class EmulatorGP(GPEmulator):
             assert (
                 isinstance(sg_mc_samples, int) and sg_mc_samples > 0
             ), "sg_mc_samples must be positive int for sparse grid and Monte Carlo methods"
-        gp_mean = gp_prediction.mean if gp_prediction is not None else sim_data.gp_mean
-        gp_covar = gp_prediction.covariance if gp_prediction is not None else sim_data.gp_covar
+        if gp_prediction is None:
+            gp_prediction = self.predict(data=sim_data)
         # Call instance of expected improvement class
         ei_class = ExpectedImprovement(
             ep_bias,
-            gp_mean,
-            gp_covar,
+            gp_prediction.mean,
+            gp_prediction.covariance,
             exp_data,
             best_error_metrics,
             self.seed,
@@ -1828,8 +1757,6 @@ class EmulatorGP(GPEmulator):
         )
         # Call correct method of ei calculation
         ei, ei_terms_df = ei_class.compute()
-        # Add ei data to validation data class
-        sim_data.acq = ei
 
         return ei, ei_terms_df
 
@@ -1849,8 +1776,8 @@ class EmulatorGP(GPEmulator):
         ----------
         gp_prediction: GPPrediction or None, default None
             The GPPrediction returned by a prior predict() call on the same data, reused
-            instead of re-reading data.gp_mean/data.gp_covar. Optional and purely additive --
-            omitting it preserves the current data.gp_* read.
+            instead of computing a fresh one. If None, this calls predict(data=data)
+            internally.
 
         Returns
         -------

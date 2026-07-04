@@ -1079,9 +1079,14 @@ class General_Analysis:
                 gp_object.feature_test_data = gp_object.featurize_data(
                     gp_object.test_data
                 )
-                gp_object.test_data.gp_mean, gp_object.test_data.gp_var = (
-                    gp_object.predict(target="test")
-                )
+                # This is gp_parity_data's legitimate output: predict() no longer mutates
+                # gp_mean/gp_var/gp_covar onto Data itself, so attach all three explicitly
+                # from the returned GPPrediction (previously .gp_covar came from predict()'s
+                # internal write, which this attachment alone didn't cover).
+                test_prediction = gp_object.predict(target="test")
+                gp_object.test_data.gp_mean = test_prediction.mean
+                gp_object.test_data.gp_var = test_prediction.variance
+                gp_object.test_data.gp_covar = test_prediction.covariance
 
             test_data_obj = gp_object.test_data
 
