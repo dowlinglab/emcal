@@ -18,7 +18,7 @@ from .simulator import Simulator
 from .data import Data, CandidateSet
 from .exploration import ExplorationBias
 from .emulators import GPEmulator, ObjectiveGP, EmulatorGP, build_gp_emulator
-from .results import BOResults
+from .results import BOResults, build_iteration_row, ITERATION_COLUMNS
 
 
 class GPBODriver:
@@ -966,60 +966,26 @@ class GPBODriver:
         time_per_iter = time_end - time_start
 
         # Create Results Pandas DataFrame for 1 iter
-        column_names = [
-            "best_error",
-            "alpha",
-            "theta_at_acq",
-            "acq_value",
-            "sse_at_acq",
-            "mse_at_acq",
-            "theta_at_min",
-            "sse_gp",
-            "sse_actual",
-            "mse_gp",
-            "mse_actual",
-            "time_per_iter",
-        ]
         num_exp_x = self.exp_data.n_x
         # Return SSE and not log(SSE) for 'Min Obj', 'sse_actual', 'sse_gp' when calculating MSE
-        MSE_acq_obj_act = (
-            np.exp(opt_acq_sim) / num_exp_x
-            if self.method.log_scaled
-            else opt_acq_sim / num_exp_x
-        )
         if self.cs_params.get_y_sse:
             min_sse_sim = float(np.asarray(min_sse_theta_data.y_vals).item())
-            MSE_obj_act = (
-                np.exp(min_sse_sim) / num_exp_x
-                if self.method.log_scaled
-                else min_sse_sim / num_exp_x
-            )
         else:
             min_sse_sim = None
-            MSE_obj_act = None
 
-        MSE_obj_gp = (
-            np.exp(min_sse_gp) / num_exp_x
-            if self.method.log_scaled
-            else min_sse_gp / num_exp_x
-        )
-        bo_iter_results = [
+        iter_df = build_iteration_row(
             best_error_metrics[0],
-            float(self.ep_bias.ep_curr),
+            self.ep_bias.ep_curr,
             acq_theta_data.theta_vals[0],
-            float(np.asarray(opt_acq).item()),
+            opt_acq,
             opt_acq_sim,
-            MSE_acq_obj_act,
             min_sse_theta_data.theta_vals[0],
             min_sse_gp,
             min_sse_sim,
-            MSE_obj_gp,
-            MSE_obj_act,
             time_per_iter,
-        ]
-        iter_df = pd.DataFrame(columns=column_names)
-        # Add the new row to the DataFrame
-        iter_df.loc[0] = bo_iter_results
+            self.method.log_scaled,
+            num_exp_x,
+        )
 
         return iter_df, iter_max_ei_terms, gp_emulator_curr
 
@@ -1051,22 +1017,7 @@ class GPBODriver:
             0 < self.bo_iter_term_frac <= 1
         ), "self.bo_iter_term_frac must be between 0 and 1"
         # Initialize pandas dataframes
-        column_names = [
-            "best_error",
-            "alpha",
-            "theta_at_acq",
-            "acq_value",
-            "sse_at_acq",
-            "mse_at_acq",
-            "theta_at_min",
-            "sse_gp",
-            "sse_actual",
-            "mse_gp",
-            "mse_actual",
-            "time_per_iter",
-        ]
-
-        results_df = pd.DataFrame(columns=column_names)
+        results_df = pd.DataFrame(columns=ITERATION_COLUMNS)
         max_ei_details_df = pd.DataFrame()
         list_gp_emulator_class = []
         # Initialize count

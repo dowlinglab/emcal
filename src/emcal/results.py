@@ -1,10 +1,109 @@
 """BOResults: container for the results of a Bayesian-optimization run (trajectory
 DataFrame, per-iteration GP emulators, experimental data, termination reason).
 """
+import numpy as np
 import pandas as pd
 from .simulator import Simulator
 from .data import Data
 from .emulators import ObjectiveGP, EmulatorGP
+
+
+# The single source of truth for GPBODriver's per-iteration results columns -- previously
+# duplicated verbatim between __run_bo_iter (as the columns of the 1-row DataFrame
+# build_iteration_row now assembles) and __run_bo_to_term (as the columns of the empty
+# DataFrame results are concatenated into).
+ITERATION_COLUMNS = [
+    "best_error",
+    "alpha",
+    "theta_at_acq",
+    "acq_value",
+    "sse_at_acq",
+    "mse_at_acq",
+    "theta_at_min",
+    "sse_gp",
+    "sse_actual",
+    "mse_gp",
+    "mse_actual",
+    "time_per_iter",
+]
+
+
+def build_iteration_row(
+    best_error,
+    ep_curr,
+    acq_theta_vals,
+    opt_acq,
+    opt_acq_sim,
+    min_sse_theta_vals,
+    min_sse_gp,
+    min_sse_sim,
+    time_per_iter,
+    log_scaled,
+    num_exp_x,
+):
+    """
+    Assembles the single-row results DataFrame for one BO iteration.
+
+    Parameters
+    ----------
+    best_error: float
+        The best error (sse) at the start of the iteration
+    ep_curr: float
+        The current exploration bias value
+    acq_theta_vals: np.ndarray
+        Parameter set that optimized the acquisition function
+    opt_acq: float
+        The optimized acquisition function value
+    opt_acq_sim: float
+        The (possibly log-scaled) simulated/actual objective value at acq_theta_vals
+    min_sse_theta_vals: np.ndarray
+        Parameter set that minimized the SSE/E[SSE] objective
+    min_sse_gp: float
+        The (possibly log-scaled) GP-predicted objective value at min_sse_theta_vals
+    min_sse_sim: float or None
+        The (possibly log-scaled) simulated/actual objective value at min_sse_theta_vals,
+        or None if not generated (cs_params.get_y_sse is False)
+    time_per_iter: float
+        Wall-clock seconds spent on this iteration
+    log_scaled: bool
+        Whether best_error/opt_acq_sim/min_sse_gp/min_sse_sim are log-scaled (method.log_scaled)
+    num_exp_x: int
+        Number of experimental state points (exp_data.n_x), used to convert SSE to MSE
+
+    Returns
+    -------
+    iter_df: pd.DataFrame
+        Single-row DataFrame with columns ITERATION_COLUMNS
+    """
+    MSE_acq_obj_act = (
+        np.exp(opt_acq_sim) / num_exp_x if log_scaled else opt_acq_sim / num_exp_x
+    )
+    if min_sse_sim is not None:
+        MSE_obj_act = (
+            np.exp(min_sse_sim) / num_exp_x if log_scaled else min_sse_sim / num_exp_x
+        )
+    else:
+        MSE_obj_act = None
+
+    MSE_obj_gp = np.exp(min_sse_gp) / num_exp_x if log_scaled else min_sse_gp / num_exp_x
+
+    bo_iter_results = [
+        best_error,
+        float(ep_curr),
+        acq_theta_vals,
+        float(np.asarray(opt_acq).item()),
+        opt_acq_sim,
+        MSE_acq_obj_act,
+        min_sse_theta_vals,
+        min_sse_gp,
+        min_sse_sim,
+        MSE_obj_gp,
+        MSE_obj_act,
+        time_per_iter,
+    ]
+    iter_df = pd.DataFrame(columns=ITERATION_COLUMNS)
+    iter_df.loc[0] = bo_iter_results
+    return iter_df
 
 
 class BOResults:
