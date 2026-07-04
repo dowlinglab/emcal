@@ -931,6 +931,128 @@ class GPEmulator:
         # Reset training data feature array
         self.feature_train_data = feature_train_data
 
+    def _sse_from_prediction(self, data, covar=False, prediction=None, **kw):
+        """
+        Hook computing (sse, sse_var, sse_covar) for `data`, given (or deriving) a
+        GPPrediction. Genuinely differs by GP type: Type 1's SSE *is* the GP output;
+        Type 2 must derive SSE from the GP-predicted model output via a blockwise
+        sum-of-squared-errors reduction against experimental data (hence the extra
+        `method`/`exp_data` kwargs it requires, threaded through predict_sse's **kw).
+
+        Parameters
+        ----------
+        data: Data
+        covar: bool, default False
+        prediction: GPPrediction or None, default None
+        **kw: subclass-specific extra arguments (e.g. EmulatorGP's method, exp_data)
+
+        Returns
+        -------
+        sse, sse_var, sse_covar
+        """
+        raise NotImplementedError
+
+    def predict_sse(self, target=None, data=None, covar=False, prediction=None, **kw):
+        """
+        GP-predicted SSE mean and (co)variance.
+
+        Collapses the former eval_gp_sse_var_{test,val,cand,misc}. Choose a built-in
+        `target` ("test"/"val"/"cand") or pass an arbitrary `data`. Extra keyword
+        arguments (e.g. EmulatorGP's `method`/`exp_data`) are forwarded to the
+        _sse_from_prediction hook.
+
+        Parameters
+        ----------
+        prediction: GPPrediction or None, default None
+            The GPPrediction returned by a prior predict() call on the same data, reused
+            instead of computing a fresh one. If None, this calls predict(data=data)
+            internally.
+
+        Returns
+        -------
+        GPPrediction
+
+        Raises
+        ------
+        AssertionError
+            If covar is not a boolean, or (subclass-specific) required parameters are
+            missing or not of the correct type or value
+        """
+        data = self._resolve_target(target, data)
+        assert isinstance(covar, bool), "covar must be bool!"
+
+        sse, sse_var, sse_covar = self._sse_from_prediction(
+            data, covar=covar, prediction=prediction, **kw
+        )
+        return GPPrediction(sse, variance=sse_var, covariance=sse_covar, as_covar=covar)
+
+    def _compute_ei(self, sim_data, exp_data, ep_bias, best_error_metrics, gp_prediction=None, **kw):
+        """
+        Hook evaluating the expected-improvement acquisition function for `sim_data`.
+        Near-identical between subclasses (predict-if-none -> build
+        ExpectedImprovement(...) -> .compute()), but EmulatorGP requires extra `method`/
+        `sg_mc_samples` arguments and an upfront method-range validation, so each
+        subclass keeps its own body rather than forcing a shared implementation.
+
+        Parameters
+        ----------
+        sim_data: Data
+        exp_data: Data
+        ep_bias: ExplorationBias
+        best_error_metrics: tuple(float, np.ndarray, np.ndarray)
+        gp_prediction: GPPrediction or None, default None
+        **kw: subclass-specific extra arguments (e.g. EmulatorGP's method, sg_mc_samples)
+
+        Returns
+        -------
+        ei, ei_terms_df
+        """
+        raise NotImplementedError
+
+    def expected_improvement(self, target=None, data=None, exp_data=None, ep_bias=None,
+                              best_error_metrics=None, gp_prediction=None, **kw):
+        """
+        Expected-improvement acquisition function.
+
+        Collapses the former eval_ei_{test,val,cand,misc}. Choose a built-in `target`
+        ("test"/"val"/"cand") or pass an arbitrary `data`. `best_error_metrics` is the
+        (best_error, best_theta, best_error_x) tuple from calc_best_error(). Extra
+        keyword arguments (e.g. EmulatorGP's `method`/`sg_mc_samples`) are forwarded to
+        the _compute_ei hook.
+
+        Parameters
+        ----------
+        gp_prediction: GPPrediction or None, default None
+            The GPPrediction returned by a prior predict() call on the same data, reused
+            instead of computing a fresh one. If None, this calls predict(data=data)
+            internally.
+
+        Returns
+        -------
+        ei : np.ndarray
+        ei_terms_df : pd.DataFrame
+
+        Raises
+        ------
+        AssertionError
+            If any of the required parameters are missing or not of the correct type or
+            value
+        """
+        data = self._resolve_target(target, data)
+
+        assert isinstance(data, Data), "data must be type Data"
+        assert isinstance(exp_data, Data), "exp_data must be type Data"
+        assert isinstance(
+            ep_bias, ExplorationBias
+        ), "ep_bias must be type Exploration_bias"
+        assert (
+            isinstance(best_error_metrics, tuple) and len(best_error_metrics) == 3
+        ), "Error metric must be a tuple of length 3"
+
+        return self._compute_ei(
+            data, exp_data, ep_bias, best_error_metrics, gp_prediction=gp_prediction, **kw
+        )
+
 
 class ObjectiveGP(GPEmulator):
     """
@@ -945,11 +1067,11 @@ class ObjectiveGP(GPEmulator):
     featurize_data(data) (overrides abstract GPEmulator.featurize_data): Collects the featues of the GP into ndarray form from an instance of the Data class
     split_train_test(sep_fact, seed) (inherited from GPEmulator): Finds the simulation data to use as training/testing data
     _select_train_test_rows(train_idx, test_idx): Type 1's x_vals is shared experimental data, so it is not indexed at all
-    __eval_gp_sse_var(data, covar): Calculates the GP mean and variance for a given input set
-    predict_sse(target=None, data=None, covar=False): GP-predicted SSE mean and (co)variance
+    predict_sse(target=None, data=None, covar=False) (inherited from GPEmulator): GP-predicted SSE mean and (co)variance
+    _sse_from_prediction(data, covar, prediction): For Type 1, sse is the gp_mean, so this is a direct passthrough of the prediction
     calc_best_error(): Calculates the best error metrics for the GP
-    __eval_gp_ei(sim_data, exp_data, ep_bias, best_error_metrics): Evaluates the expected improvement for the GP
-    expected_improvement(target=None, data=None, exp_data=None, ep_bias=None, best_error_metrics=None): Expected improvement acquisition
+    expected_improvement(target=None, data=None, exp_data=None, ep_bias=None, best_error_metrics=None) (inherited from GPEmulator): Expected improvement acquisition
+    _compute_ei(sim_data, exp_data, ep_bias, best_error_metrics): Predict-if-none, build ExpectedImprovement(...), .compute()
 
     append_training_point (inherited from GPEmulator): Adds the next parameter set to the training data
     """
@@ -1090,33 +1212,11 @@ class ObjectiveGP(GPEmulator):
 
         return theta_train, x_train, y_train, theta_test, x_test, y_test
 
-    def __eval_gp_sse_var(self, data, covar=False, prediction=None):
+    def _sse_from_prediction(self, data, covar=False, prediction=None):
         """
-        Evaluates GP model sse and sse variance and for standard GPBO for the data
-
-        Parameters
-        ----------
-        data: Data
-            Parameter sets you want to evaluate the sse and sse variance for
-        covar: bool, default False
-            Determines whether covariance (True) or variance (False) of sse is returned with the gp mean
-        prediction: GPPrediction or None, default None
-            The GP mean/variance/covariance to derive the sse from. If None, computed here
-            via self.predict(data=data).
-
-        Returns
-        --------
-        sse: np.ndarray
-            The sse derived from gp_mean evaluated over the data
-        sse_var: np.ndarray
-        sse_covar: np.ndarray
-
-        Raises
-        ------
-        AssertionError
-            If covar is not a boolean
+        For Type 1, sse is the gp_mean, so this is a direct passthrough of the prediction.
         """
-        assert isinstance(covar, bool), "covar must be bool!"
+        assert isinstance(data, Data), "data must be type Data"
         if prediction is None:
             prediction = self.predict(data=data)
         # For type 1, sse is the gp_mean
@@ -1125,32 +1225,6 @@ class ObjectiveGP(GPEmulator):
         sse_covar = prediction.covariance
 
         return sse, sse_var, sse_covar
-
-    def predict_sse(self, target=None, data=None, covar=False, prediction=None):
-        """
-        GP-predicted SSE mean and (co)variance (standard/objective GP).
-
-        Collapses the former eval_gp_sse_var_{test,val,cand,misc}. For the objective GP
-        the SSE *is* the GP output. Choose a built-in `target` ("test"/"val"/"cand") or
-        pass an arbitrary `data`.
-
-        Parameters
-        ----------
-        prediction: GPPrediction or None, default None
-            The GPPrediction returned by a prior predict() call on the same data, reused
-            instead of computing a fresh one. If None, this calls predict(data=data)
-            internally.
-
-        Returns
-        -------
-        GPPrediction
-        """
-        data = self._resolve_target(target, data)
-
-        assert isinstance(data, Data), "data must be type Data"
-
-        sse, sse_var, sse_covar = self.__eval_gp_sse_var(data, covar, prediction=prediction)
-        return GPPrediction(sse, variance=sse_var, covariance=sse_covar, as_covar=covar)
 
     def calc_best_error(self):
         """
@@ -1187,32 +1261,9 @@ class ObjectiveGP(GPEmulator):
 
         return best_error, be_theta, train_idc
 
-    def __eval_gp_ei(self, sim_data, exp_data, ep_bias, best_error_metrics, gp_prediction=None):
+    def _compute_ei(self, sim_data, exp_data, ep_bias, best_error_metrics, gp_prediction=None):
         """
-        Evaluates gp acquisition function. In this case, ei
-
-        Parmaeters
-        ----------
-        sim_data: Data
-            Simulated data to evaluate ei for
-        exp_data: Data
-            Experimental data to evaluate ei with
-        ep_bias: ExplorationBias
-            The exploration bias class
-        best_error_metrics: tuple(float, np.ndarray, np.ndarray)
-            The best error, best error parameter set, and best_error_x values of the method. Hint use calc_best_error()
-        gp_prediction: GPPrediction or None, default None
-            The GP mean/covariance to evaluate EI at. If None, computed here via
-            self.predict(data=sim_data). .covariance is always used regardless of the covar
-            flag predict() was called with -- it computes the full covariance
-            unconditionally.
-
-        Returns
-        -------
-        ei: np.ndarray
-            The expected improvement of all the data in test_data
-        ei_terms_df: pd.DataFrame
-            pandas dataframe containing the values of calculations associated with ei for the parameter sets
+        Predict-if-none, build ExpectedImprovement(...), .compute().
         """
         if gp_prediction is None:
             gp_prediction = self.predict(data=sim_data)
@@ -1231,40 +1282,6 @@ class ObjectiveGP(GPEmulator):
 
         return ei, ei_terms_df
 
-    def expected_improvement(self, target=None, data=None, exp_data=None, ep_bias=None,
-                             best_error_metrics=None, gp_prediction=None):
-        """
-        Expected-improvement acquisition for the standard/objective GP.
-
-        Collapses the former eval_ei_{test,val,cand,misc}. Choose a built-in `target`
-        ("test"/"val"/"cand") or pass an arbitrary `data`. `best_error_metrics` is the
-        (best_error, best_theta, best_error_x) tuple from calc_best_error().
-
-        Parameters
-        ----------
-        gp_prediction: GPPrediction or None, default None
-            The GPPrediction returned by a prior predict() call on the same data, reused
-            instead of computing a fresh one. If None, this calls predict(data=data)
-            internally.
-
-        Returns
-        -------
-        ei : np.ndarray
-        ei_terms_df : pd.DataFrame
-        """
-        data = self._resolve_target(target, data)
-
-        assert isinstance(data, Data), "data must be type Data"
-        assert isinstance(exp_data, Data), "exp_data must be type Data"
-        assert isinstance(
-            ep_bias, ExplorationBias
-        ), "ep_bias must be type Exploration_bias"
-        assert (
-            isinstance(best_error_metrics, tuple) and len(best_error_metrics) == 3
-        ), "Error metric must be a tuple of length 3"
-
-        return self.__eval_gp_ei(data, exp_data, ep_bias, best_error_metrics, gp_prediction=gp_prediction)
-
 
 class EmulatorGP(GPEmulator):
     """
@@ -1279,11 +1296,11 @@ class EmulatorGP(GPEmulator):
     featurize_data(data) (overrides abstract GPEmulator.featurize_data): Collects the features of the GP into ndarray form from an instance of the Data class
     split_train_test(sep_fact, seed) (inherited from GPEmulator): Finds the simulation data to use as training/testing data
     _select_train_test_rows(train_idx, test_idx): Expands theta-level indices to full (theta, x)-row boolean masks via get_unique_theta() + np.isin
-    __eval_gp_sse_var(data, exp_data, covar): Calculates the SSE mean and variance for a given input set
-    predict_sse(target=None, data=None, method=None, exp_data=None, covar=False): GP-predicted SSE mean and (co)variance
+    predict_sse(target=None, data=None, method=None, exp_data=None, covar=False) (inherited from GPEmulator): GP-predicted SSE mean and (co)variance
+    _sse_from_prediction(data, method, exp_data, covar, prediction): Derives SSE from the GP-predicted model output via a blockwise sum-of-squared-errors reduction against experimental data
     calc_best_error(method, exp_data): Calculates the best error metrics for the GP
-    __eval_gp_ei(sim_data, exp_data, ep_bias, best_error_metrics, method, sg_mc_samples): Evaluates the expected improvement for the GP
-    expected_improvement(target=None, data=None, exp_data=None, ep_bias=None, best_error_metrics=None, method=None, sg_mc_samples=2000): Expected improvement acquisition
+    expected_improvement(target=None, data=None, exp_data=None, ep_bias=None, best_error_metrics=None, method=None, sg_mc_samples=2000) (inherited from GPEmulator): Expected improvement acquisition
+    _compute_ei(sim_data, exp_data, ep_bias, best_error_metrics, method, sg_mc_samples): Evaluates the expected improvement for the GP
     _extend_train_data_arrays(new_point_data): Grows x_vals too when append_training_point (inherited from GPEmulator) adds a point
     """
 
@@ -1451,35 +1468,30 @@ class EmulatorGP(GPEmulator):
 
         return theta_train, x_train, y_train, theta_test, x_test, y_test
 
-    def __eval_gp_sse_var(self, data, exp_data, covar=False, prediction=None):
+    def _sse_from_prediction(self, data, method=None, exp_data=None, covar=False, prediction=None):
         """
-        Evaluates GP model sse and sse (co)variance for emulator GPBO
-
-        Parameters
-        ----------
-        data: Data
-            Parameter sets you want to evaluate the sse and sse variance for
-        exp_data: Data
-            The experimental data of the class. Must contain exp_data.x_vals and exp_data.y_vals
-        covar: bool, default False
-            Determines whether covariance (True) or variance (False) of sse is returned with the gp mean
-        prediction: GPPrediction or None, default None
-            The GP mean/covariance to derive the sse from. If None, computed here via
-            self.predict(data=data). .covariance is always used regardless of the covar
-            flag -- predict() computes the full covariance unconditionally (full_cov=True).
-
-        Returns
-        --------
-        sse_mean: tensor
-            The sse derived from gp_mean evaluated over all state points
-        sse_var: tensor
-        sse_covar: tensor or None
-
-        Raises
-        ------
-        AssertionError
-            If covar is not a boolean
+        Type 2 derives SSE from the GP-predicted model output via a blockwise
+        sum-of-squared-errors reduction against experimental data. `method` is validated
+        but not otherwise used here.
         """
+        assert isinstance(
+            method, GPBOMethod
+        ), "method must be instance of GPBOMethod class"
+        assert all(
+            isinstance(var, Data) for var in [data, exp_data]
+        ), "data and exp_data must be type Data"
+        assert np.all(
+            data.x_vals is not None
+        ), "data.x_vals and data.theta_vals must exist!"
+        assert np.all(
+            data.theta_vals is not None
+        ), "data.x_vals and data.theta_vals must exist!"
+        assert np.all(
+            exp_data.x_vals is not None
+        ), "exp_data.x_vals and exp_data.y_vals must exist!"
+        assert np.all(
+            exp_data.y_vals is not None
+        ), "exp_data.x_vals and exp_data.y_vals must exist!"
         assert isinstance(covar, bool), "covar must be bool!"
 
         if prediction is None:
@@ -1532,50 +1544,6 @@ class EmulatorGP(GPEmulator):
                 sse_covar = None
 
         return sse_mean, sse_var, sse_covar
-
-    def predict_sse(self, target=None, data=None, method=None, exp_data=None, covar=False,
-                     prediction=None):
-        """
-        GP-predicted SSE mean and (co)variance (emulator GP).
-
-        Collapses the former eval_gp_sse_var_{test,val,cand,misc}. The emulator GP models
-        the model output, so deriving the SSE needs the `method` and experimental `exp_data`.
-        Choose a built-in `target` ("test"/"val"/"cand") or pass an arbitrary `data`.
-
-        Parameters
-        ----------
-        prediction: GPPrediction or None, default None
-            The GPPrediction returned by a prior predict() call on the same data, reused
-            instead of computing a fresh one. If None, this calls predict(data=data)
-            internally.
-
-        Returns
-        -------
-        GPPrediction
-        """
-        data = self._resolve_target(target, data)
-
-        assert isinstance(
-            method, GPBOMethod
-        ), "method must be instance of GPBOMethod class"
-        assert all(
-            isinstance(var, Data) for var in [data, exp_data]
-        ), "data and exp_data must be type Data"
-        assert np.all(
-            data.x_vals is not None
-        ), "data.x_vals and data.theta_vals must exist!"
-        assert np.all(
-            data.theta_vals is not None
-        ), "data.x_vals and data.theta_vals must exist!"
-        assert np.all(
-            exp_data.x_vals is not None
-        ), "exp_data.x_vals and exp_data.y_vals must exist!"
-        assert np.all(
-            exp_data.y_vals is not None
-        ), "exp_data.x_vals and exp_data.y_vals must exist!"
-
-        sse_mean, sse_var, sse_covar = self.__eval_gp_sse_var(data, exp_data, covar, prediction=prediction)
-        return GPPrediction(sse_mean, variance=sse_var, covariance=sse_covar, as_covar=covar)
 
     def calc_best_error(self, method, exp_data):
         """
@@ -1654,50 +1622,27 @@ class EmulatorGP(GPEmulator):
 
         return best_error, be_theta, best_sq_error, org_train_idcs
 
-    def __eval_gp_ei(
-        self,
-        sim_data,
-        exp_data,
-        ep_bias,
-        best_error_metrics,
-        method,
-        sg_mc_samples=2000,
-        gp_prediction=None,
-    ):
+    def _compute_ei(self, sim_data, exp_data, ep_bias, best_error_metrics, method=None,
+                     sg_mc_samples=2000, gp_prediction=None):
         """
-        Evaluates the (EI) acquisition function for a given data set
-
-        Parmaeters
-        ----------
-        sim_data: Data
-            Data to evaluate ei for
-        exp_data: Data
-            The experimental data to evaluate ei with
-        ep_bias: ExplorationBias, The exploration bias class
-        best_error_metrics: tuple(float, np.ndarray, np.ndarray)
-            the best error (sse), best error parameter set, and best_error_x (squared error) values of the method. Hint: use calc_best_error()
-        method: Method class
-            Method for GP Emulation
-        sg_mc_samples: int, default 2000
-            Number of samples to use for the Tasmanian sparse grid or Monte Carlo approaches
-        gp_prediction: GPPrediction or None, default None
-            The GP mean/covariance to evaluate EI at. If None, computed here via
-            self.predict(data=sim_data). .covariance is always used regardless of the covar
-            flag predict() was called with -- it computes the full covariance
-            unconditionally.
-
-        Returns
-        -------
-        ei: np.ndarray
-            The expected improvement of all the data in sim_data
-        ei_terms_df: pd.DataFrame
-            Pandas dataframe containing the values of calculations associated with ei for the parameter sets
-
-        Raises
-        ------
-        AssertionError
-            If any of the required parameters are missing or not of the correct type or value
+        Emulator EI needs the `method` and experimental `exp_data`; `sg_mc_samples` sets
+        the sparse-grid / Monte-Carlo sample count. The sparse-grid and Monte-Carlo
+        methods require a single sample covariance matrix, so `sim_data` must contain a
+        single unique parameter set for those.
         """
+        assert isinstance(
+            method, GPBOMethod
+        ), "method must be instance of GPBOMethod"
+        assert (
+            6 >= method.method_name.value > 2
+        ), "method must be Type 2. Hint: Must have method.method_name.value > 2"
+
+        if method.method_name.value in [5, 6]:
+            if len(sim_data.get_unique_theta()) > 1:
+                raise ValueError(
+                    "Sparse Grid and Monte Carlo methods require a single sample covariance matrix"
+                )
+
         assert (
             6 >= method.method_name.value >= 3
         ), "Must be using method 2A, 2B, 2C, or 2D"
@@ -1723,63 +1668,6 @@ class EmulatorGP(GPEmulator):
         ei, ei_terms_df = ei_class.compute()
 
         return ei, ei_terms_df
-
-    def expected_improvement(self, target=None, data=None, exp_data=None, ep_bias=None,
-                             best_error_metrics=None, method=None, sg_mc_samples=2000,
-                             gp_prediction=None):
-        """
-        Expected-improvement acquisition for the emulator GP.
-
-        Collapses the former eval_ei_{test,val,cand,misc}. Choose a built-in `target`
-        ("test"/"val"/"cand") or pass an arbitrary `data`. Emulator EI needs the `method`
-        and experimental `exp_data`; `sg_mc_samples` sets the sparse-grid / Monte-Carlo
-        sample count. `best_error_metrics` is the (best_error, best_theta, best_error_x)
-        tuple from calc_best_error().
-
-        Parameters
-        ----------
-        gp_prediction: GPPrediction or None, default None
-            The GPPrediction returned by a prior predict() call on the same data, reused
-            instead of computing a fresh one. If None, this calls predict(data=data)
-            internally.
-
-        Returns
-        -------
-        ei : np.ndarray
-        ei_terms_df : pd.DataFrame
-
-        Notes
-        -----
-        The sparse-grid and Monte-Carlo methods require a single sample covariance
-        matrix, so `data` must contain a single unique parameter set for those.
-        """
-        data = self._resolve_target(target, data)
-
-        assert isinstance(data, Data), "data must be type Data"
-        assert isinstance(exp_data, Data), "exp_data must be type Data"
-        assert isinstance(
-            ep_bias, ExplorationBias
-        ), "ep_bias must be type Exploration_bias"
-        assert (
-            isinstance(best_error_metrics, tuple) and len(best_error_metrics) == 3
-        ), "Error metric must be a tuple of length 3"
-        assert isinstance(
-            method, GPBOMethod
-        ), "method must be instance of GPBOMethod"
-        assert (
-            6 >= method.method_name.value > 2
-        ), "method must be Type 2. Hint: Must have method.method_name.value > 2"
-
-        if method.method_name.value in [5, 6]:
-            if len(data.get_unique_theta()) > 1:
-                raise ValueError(
-                    "Sparse Grid and Monte Carlo methods require a single sample covariance matrix"
-                )
-
-        return self.__eval_gp_ei(
-            data, exp_data, ep_bias, best_error_metrics, method, sg_mc_samples,
-            gp_prediction=gp_prediction,
-        )
 
     def _extend_train_data_arrays(self, new_point_data):
         """Type-2 also carries per-point x alongside theta, so grow x_vals here too."""
