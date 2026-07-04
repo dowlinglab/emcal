@@ -393,10 +393,7 @@ class Plotters:
                 all_z_titles_pre.append("Aquisition Function, ")
             else:
                 raise ValueError("choice must contain 'sim', 'mean', 'var', or 'acq'")
-        if len(all_z_data) == 1:
-            return all_z_data[0], all_z_titles[0], all_z_titles_pre[0]
-        else:
-            return all_z_data, all_z_titles, all_z_titles_pre
+        return all_z_data, all_z_titles, all_z_titles_pre
 
     def plot_gp_fit(
         self,
@@ -721,11 +718,8 @@ class Plotters:
             )
             z_choices_str = "_".join(map(str, z_choices_sort))
             title_str = title.replace(" ", "_").lower()
-            save_path = self.analyzer.make_dir_name_from_criteria(
-                self.analyzer.criteria_dict
-            )
             save_path_dir = os.path.join(
-                save_path,
+                job.fn(""),
                 "heat_maps",
                 title_str,
                 plot_axis_names[0] + "-" + plot_axis_names[1],

@@ -7,6 +7,7 @@ Run the fast tier with `pytest -m "not slow"`; run these with the full suite.
 import gzip
 import json
 import os
+import pathlib
 import pickle
 
 import matplotlib
@@ -248,11 +249,22 @@ def test_plot_gp_fit_sse_choices(plotter, job_ctx):
 
 def test_plot_gp_fit_with_acquisition(plotter, job_ctx):
     # "acq" alongside another z_choice exercises gp_heat_map_data's get_ei=True dispatch
-    # from inside plot_gp_fit (a single z_choice hits a pre-existing 1D/2D contourf shape
-    # mismatch unrelated to this coverage step, so this always pairs acq with a second choice).
+    # from inside plot_gp_fit.
     fig = _capture_shown_figure(
         lambda: plotter.plot_gp_fit(job_ctx, 1, 1, 0, ["sse_mean", "acq"])
     )
+    assert fig is not None
+    assert len(fig.axes) > 0
+
+
+@pytest.mark.parametrize("z_choice", ["sse_sim", "sse_mean", "sse_var", "acq"])
+def test_plot_gp_fit_single_z_choice(plotter, job_ctx, z_choice):
+    # Regression test: __get_z_plot_names_hms used to unwrap its list return values to bare
+    # scalars/strings when given a single z_choice, so plot_gp_fit's `all_z_data[i]` indexed
+    # into the ndarray itself (a 1D row) instead of getting the whole 2D array, and
+    # matplotlib's contourf raised "Input z must be 2D, not 1D". Fixed by always returning
+    # lists from __get_z_plot_names_hms, regardless of how many z_choices were requested.
+    fig = _capture_shown_figure(lambda: plotter.plot_gp_fit(job_ctx, 1, 1, 0, [z_choice]))
     assert fig is not None
     assert len(fig.axes) > 0
 
@@ -271,17 +283,25 @@ def test_plot_hyperparameters_save_figs_writes_under_job_workspace(ga, job_ctx):
     plotter_save = Plotters(ga, save_figs=True)
     plotter_save.plot_hyperparameters(job_ctx)
 
-    saved = list((__import__("pathlib").Path(job_ctx.workspace_dir)).rglob("*.png"))
+    # Scoped to plot_hyperparameters' own subdirectory: job_ctx is module-scoped and shared
+    # with the plot_gp_fit save_figs test below, which writes into a sibling "heat_maps" dir.
+    saved = list(pathlib.Path(job_ctx.workspace_dir, "line_plots").rglob("*.png"))
     assert len(saved) == 1
 
 
-def test_plot_gp_fit_save_figs_writes_relative_to_cwd(ga, job_ctx, monkeypatch, tmp_path):
-    # Unlike plot_hyperparameters/plot_parameters, plot_gp_fit's save path is built from
-    # make_dir_name_from_criteria (cwd-relative), not job.fn("") -- chdir into a throwaway
-    # tmp_path so this doesn't write a "results/" directory into the repo.
+def test_plot_gp_fit_save_figs_writes_under_job_workspace(ga, job_ctx, monkeypatch, tmp_path):
+    # Regression test: plot_gp_fit's save path used to be built from
+    # make_dir_name_from_criteria (cwd-relative), unlike plot_hyperparameters/plot_parameters
+    # which both correctly use job.fn("") -- so save_figs=True wrote a "results/" directory
+    # into whatever the cwd happened to be (e.g. the repo root) instead of the job's own
+    # workspace. Fixed to use job.fn("") like its siblings. chdir into a throwaway tmp_path
+    # anyway, purely as a belt-and-suspenders guard against a future regression polluting cwd.
     monkeypatch.chdir(tmp_path)
     plotter_save = Plotters(ga, save_figs=True)
     plotter_save.plot_gp_fit(job_ctx, 1, 1, 0, ["sse_sim", "sse_mean"])
 
-    saved = list(tmp_path.rglob("*.png"))
+    assert list(tmp_path.rglob("*.png")) == []  # nothing written relative to cwd
+    # Scoped to plot_gp_fit's own subdirectory: job_ctx is module-scoped and shared with the
+    # plot_hyperparameters save_figs test above, which writes into a sibling "line_plots" dir.
+    saved = list(pathlib.Path(job_ctx.workspace_dir, "heat_maps").rglob("*.png"))
     assert len(saved) == 1
