@@ -181,6 +181,27 @@ class GPEmulator:
 
         return num_gp_data
 
+    def get_dim_gp_data(self):
+        """
+        Defines the total dimension of the input data used by the GP
+
+        Returns
+        -------
+        dim_gp_data: int
+            The dimensions of the input data that the GP will use
+
+        Raises
+        ------
+        AssertionError
+            If any of the required parameters are missing or not of the correct type or value
+
+        Notes
+        -----
+        The dimension count itself is subclass-specific (Type 1 uses only theta;
+        Type 2 also carries x), so this delegates to the _gp_input_dim() hook.
+        """
+        return self._gp_input_dim()
+
     def bounded_parameter(self, low, high, initial_value):
         """
         Creates a bounded parameter for the GP model
@@ -781,7 +802,8 @@ class ObjectiveGP(GPEmulator):
     Methods
     --------------
     __init__(*): Constructor method
-    get_dim_gp_data(): Defines the total dimension of data used by the GP
+    get_dim_gp_data (inherited from GPEmulator): Defines the total dimension of data used by the GP
+    _gp_input_dim(): Type 1 GP input is theta only, so the dimension is just theta_dim
     featurize_data(data): Collects the featues of the GP into ndarray form from an instance of the Data class
     split_train_test(sep_fact, seed): Finds the simulation data to use as training/testing data
     __eval_gp_sse_var(data, covar): Calculates the GP mean and variance for a given input set
@@ -868,14 +890,9 @@ class ObjectiveGP(GPEmulator):
             None  # Will be populated with the 1st instance of train data
         )
 
-    def get_dim_gp_data(self):
+    def _gp_input_dim(self):
         """
-        Defines the total dimension of the input data used by the GP
-
-        Returns
-        -------
-        dim_gp_data: int
-            The dimensions of the input data that the GP will use
+        Type 1 GP input is theta only, so the dimension is just theta_dim.
         """
         assert np.all(
             self.gp_sim_data.theta_vals is not None
@@ -1202,7 +1219,8 @@ class EmulatorGP(GPEmulator):
     Methods
     --------------
     __init__(*) : Constructor method
-    get_dim_gp_data(): Defines the total dimension of input data used by the GP
+    get_dim_gp_data (inherited from GPEmulator): Defines the total dimension of input data used by the GP
+    _gp_input_dim(): Type 2 GP input is theta and x, so the dimension is x_dim + theta_dim
     featurize_data(data): Collects the features of the GP into ndarray form from an instance of the Data class
     split_train_test(sep_fact, seed): Finds the simulation data to use as training/testing data
     __eval_gp_sse_var(data, exp_data, covar): Calculates the SSE mean and variance for a given input set
@@ -1294,19 +1312,9 @@ class EmulatorGP(GPEmulator):
             None  # This will be populated with the first set of training thetas
         )
 
-    def get_dim_gp_data(self):
+    def _gp_input_dim(self):
         """
-        Defines the total dimension of input data used by the GP
-
-        Returns
-        -------
-        dim_gp_data: int
-            Tthe cardinality of GP input data
-
-        Raises
-        ------
-        AssertionError
-            If any of the required parameters are missing or not of the correct type or value
+        Type 2 GP input is theta and x, so the dimension is x_dim + theta_dim.
         """
         assert isinstance(
             self.gp_sim_data, Data
