@@ -748,6 +748,26 @@ class GPEmulator:
         """
         pass
 
+    def featurize_data(self, data):
+        """
+        Collects the features of the GP into ndarray form from an instance of the Data class.
+
+        Abstract hook: the feature construction genuinely differs by GP type (Type 1 uses
+        theta_vals only; Type 2 concatenates theta_vals and x_vals), so each subclass
+        provides its own implementation rather than sharing a base body.
+
+        Parameters
+        ----------
+        data: Data
+            Data to evaluate GP for
+
+        Returns
+        -------
+        feature_eval_data: np.ndarray
+            The feature data for the GP
+        """
+        raise NotImplementedError
+
     def append_training_point(self, new_point_data):
         """
         Adds parameter set which optimizes the acquisition function to the training data set
@@ -804,7 +824,7 @@ class ObjectiveGP(GPEmulator):
     __init__(*): Constructor method
     get_dim_gp_data (inherited from GPEmulator): Defines the total dimension of data used by the GP
     _gp_input_dim(): Type 1 GP input is theta only, so the dimension is just theta_dim
-    featurize_data(data): Collects the featues of the GP into ndarray form from an instance of the Data class
+    featurize_data(data) (overrides abstract GPEmulator.featurize_data): Collects the featues of the GP into ndarray form from an instance of the Data class
     split_train_test(sep_fact, seed): Finds the simulation data to use as training/testing data
     __eval_gp_sse_var(data, covar): Calculates the GP mean and variance for a given input set
     predict_sse(target=None, data=None, covar=False): GP-predicted SSE mean and (co)variance
@@ -1221,7 +1241,7 @@ class EmulatorGP(GPEmulator):
     __init__(*) : Constructor method
     get_dim_gp_data (inherited from GPEmulator): Defines the total dimension of input data used by the GP
     _gp_input_dim(): Type 2 GP input is theta and x, so the dimension is x_dim + theta_dim
-    featurize_data(data): Collects the features of the GP into ndarray form from an instance of the Data class
+    featurize_data(data) (overrides abstract GPEmulator.featurize_data): Collects the features of the GP into ndarray form from an instance of the Data class
     split_train_test(sep_fact, seed): Finds the simulation data to use as training/testing data
     __eval_gp_sse_var(data, exp_data, covar): Calculates the SSE mean and variance for a given input set
     predict_sse(target=None, data=None, method=None, exp_data=None, covar=False): GP-predicted SSE mean and (co)variance
