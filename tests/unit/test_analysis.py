@@ -4,11 +4,11 @@ import warnings
 import pytest
 
 from emcal import analysis as analysis_module
-from emcal.analysis import General_Analysis
+from emcal.analysis import RunAnalysis
 
 
 def _ga(mode="act"):
-    return General_Analysis({"cs_name_val": 1}, project=None, mode=mode, save_csv=False)
+    return RunAnalysis({"cs_name_val": 1}, project=None, mode=mode, save_csv=False)
 
 
 def test_z_choice_helper_warns_not_nameerror_on_invalid_choice(monkeypatch):
@@ -32,7 +32,7 @@ def test_z_choice_helper_warns_not_nameerror_on_invalid_choice(monkeypatch):
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         with pytest.raises(UnboundLocalError):
-            ga._General_Analysis__z_choice_helper("bogus", {"a": 1}, "params")
+            ga._RunAnalysis__z_choice_helper("bogus", {"a": 1}, "params")
 
     assert len(caught) == 1
     assert "z_choices must be" in str(caught[0].message)
@@ -45,8 +45,8 @@ def test_make_dir_name_from_criteria_is_order_independent():
     dicts with identical content but different key-insertion order produced different
     directory names. Now both orders produce the same result.
     """
-    ga_a = General_Analysis({"b": 2, "a": 1}, project=None, mode="act", save_csv=False)
-    ga_b = General_Analysis({"a": 1, "b": 2}, project=None, mode="act", save_csv=False)
+    ga_a = RunAnalysis({"b": 2, "a": 1}, project=None, mode="act", save_csv=False)
+    ga_b = RunAnalysis({"a": 1, "b": 2}, project=None, mode="act", save_csv=False)
 
     name_a = ga_a.make_dir_name_from_criteria({"b": 2, "a": 1})
     name_b = ga_b.make_dir_name_from_criteria({"a": 1, "b": 2})

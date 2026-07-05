@@ -23,9 +23,9 @@ from emcal import (
     MethodName, EpSchedule, Kernel, GenMethod, GPBOMethod, ExplorationBias,
     BOConfig, GPBODriver, get_case_study, make_case_study_simulator,
 )
-from emcal.analysis import JobContext, General_Analysis
+from emcal.analysis import JobContext, RunAnalysis
 from emcal.data import Data
-from emcal.plotting import Plotters
+from emcal.plotting import Plotter
 
 from _fakes import FakeGPBackend, sum_features
 
@@ -121,17 +121,17 @@ def job_ctx_plot_params(tmp_path_factory, job_ctx):
 
 @pytest.fixture(scope="module")
 def ga():
-    return General_Analysis({"cs_name_val": 1, "meth_name_val": 7}, project=None,
+    return RunAnalysis({"cs_name_val": 1, "meth_name_val": 7}, project=None,
                              mode="act", save_csv=False)
 
 
 @pytest.fixture(scope="module")
 def plotter(ga):
-    return Plotters(ga, save_figs=False)
+    return Plotter(ga, save_figs=False)
 
 
 def _capture_shown_figure(plot_fn):
-    """Call a Plotters method that ends in plt.show()/plt.close() (save_figs=False path) and
+    """Call a Plotter method that ends in plt.show()/plt.close() (save_figs=False path) and
     return the Figure it produced, captured just before it would be closed."""
     captured = {}
     orig_close = plt.close
@@ -150,7 +150,7 @@ def _capture_shown_figure(plot_fn):
     return fig
 
 
-# --- per-run analysis methods (General_Analysis) -----------------------------------------
+# --- per-run analysis methods (RunAnalysis) -----------------------------------------
 
 def test_get_run_dataframe_has_run_metadata_and_true_params(ga, job_ctx):
     df, (theta_true, theta_true_bnds) = ga.get_run_dataframe(job_ctx)
@@ -242,7 +242,7 @@ def test_gp_heat_map_data_ei_method6_monte_carlo(ga, job_ctx_method6):
     assert np.all(np.isfinite(sim_sse_var_ei[3]))
 
 
-# --- plotting methods (Plotters), Agg backend, show/close path ---------------------------
+# --- plotting methods (Plotter), Agg backend, show/close path ---------------------------
 
 def test_plot_hyperparameters(plotter, job_ctx):
     fig = _capture_shown_figure(lambda: plotter.plot_hyperparameters(job_ctx))
@@ -316,7 +316,7 @@ def test_plot_gp_fit_log_data(plotter, job_ctx):
 # --- save_figs=True path (__save_fig) -----------------------------------------------------
 
 def test_plot_hyperparameters_save_figs_writes_under_job_workspace(ga, job_ctx):
-    plotter_save = Plotters(ga, save_figs=True)
+    plotter_save = Plotter(ga, save_figs=True)
     plotter_save.plot_hyperparameters(job_ctx)
 
     # Scoped to plot_hyperparameters' own subdirectory: job_ctx is module-scoped and shared
@@ -333,7 +333,7 @@ def test_plot_gp_fit_save_figs_writes_under_job_workspace(ga, job_ctx, monkeypat
     # workspace. Fixed to use job.fn("") like its siblings. chdir into a throwaway tmp_path
     # anyway, purely as a belt-and-suspenders guard against a future regression polluting cwd.
     monkeypatch.chdir(tmp_path)
-    plotter_save = Plotters(ga, save_figs=True)
+    plotter_save = Plotter(ga, save_figs=True)
     plotter_save.plot_gp_fit(job_ctx, 1, 1, 0, ["sse_sim", "sse_mean"])
 
     assert list(tmp_path.rglob("*.png")) == []  # nothing written relative to cwd

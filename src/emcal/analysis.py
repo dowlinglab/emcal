@@ -10,7 +10,7 @@ from collections.abc import Iterable
 # object that exposes `.sp` (statepoint), `.fn(name)` (path into a results workspace) and
 # `.id`. A real signac job satisfies that interface, and so does the signac-free JobContext
 # defined below — so analysis/plotting run with or without signac installed. The project
-# passed to General_Analysis is likewise used only via its own methods (find_jobs/open_job),
+# passed to RunAnalysis is likewise used only via its own methods (find_jobs/open_job),
 # so no top-level signac dependency is required.
 
 
@@ -111,7 +111,7 @@ def is_job_like(obj):
     return hasattr(obj, "sp") and callable(getattr(obj, "fn", None))
 
 
-class General_Analysis:
+class RunAnalysis:
     """
     The base class for per-run/diagnostic GPBO workflow analysis (single job/JobContext or a
     fitted emulator). Multi-job/cross-method/benchmark analysis (least-squares and

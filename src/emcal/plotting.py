@@ -17,7 +17,7 @@ import warnings
 np.warnings = warnings
 
 
-class Plotters:
+class Plotter:
     """
     The base class for per-job/diagnostic plotting functions. Multi-job/cross-method/
     benchmark plotting (all-methods comparisons, NLS/derivative-free baselines, cross-case-
@@ -47,8 +47,8 @@ class Plotters:
         """
         Parameters
         ----------
-        analyzer: General_Analysis
-            An instance of the General_Analysis class
+        analyzer: RunAnalysis
+            An instance of the RunAnalysis class
         save_figs: bool, default False
             Save figures to file if True.
 
@@ -59,7 +59,7 @@ class Plotters:
         """
         # Asserts
         assert isinstance(save_figs, bool), "save_figs must be boolean"
-        assert isinstance(analyzer, General_Analysis), "analyzer must be General_Analysis"
+        assert isinstance(analyzer, RunAnalysis), "analyzer must be RunAnalysis"
 
         # Constructor method
         self.analyzer = analyzer

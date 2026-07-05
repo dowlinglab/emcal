@@ -3,7 +3,7 @@
 
 Demonstrates the signac-free analysis path added in the refactor: save BOResults to a
 plain directory, wrap it in a ``JobContext`` (a lightweight stand-in for a signac job that
-just exposes ``.sp`` and ``.fn()``), and use ``General_Analysis`` to tabulate results.
+just exposes ``.sp`` and ``.fn()``), and use ``RunAnalysis`` to tabulate results.
 Also plots best-SSE vs BO iteration with matplotlib.
 
 Run (from this examples/ directory):  python analyze_and_plot.py
@@ -20,7 +20,7 @@ matplotlib.use("Agg")  # headless-safe
 import matplotlib.pyplot as plt
 
 from common import run_case_study
-from emcal.analysis import JobContext, General_Analysis
+from emcal.analysis import JobContext, RunAnalysis
 
 
 def main():
@@ -45,7 +45,7 @@ def main():
 
     # 3. Analyze via a JobContext (no signac). A real signac job would work here too.
     jc = JobContext(ws, sp, job_id="example")
-    analyzer = General_Analysis(
+    analyzer = RunAnalysis(
         {"cs_name_val": cs_num, "meth_name_val": method_val},
         project=None, mode="act", save_csv=False,
     )

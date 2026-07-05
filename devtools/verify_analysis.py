@@ -83,7 +83,7 @@ def _fingerprint(obj):
 
 
 def _capture_shown_figure(plot_fn):
-    """Call a Plotters method that ends in plt.show()/plt.close() (save_figs=False path) and
+    """Call a Plotter method that ends in plt.show()/plt.close() (save_figs=False path) and
     return the Figure it produced, captured just before it would be closed."""
     import matplotlib.pyplot as plt
     captured = {}
@@ -150,16 +150,16 @@ def build_fixture(method_val=7):
 
 
 def run_analysis(ws):
-    from emcal.analysis import JobContext, General_Analysis
-    from emcal.plotting import Plotters
+    from emcal.analysis import JobContext, RunAnalysis
+    from emcal.plotting import Plotter
     jc = JobContext(ws, json.load(open(os.path.join(ws, "signac_statepoint.json"))), job_id="fix")
-    ga = General_Analysis({"cs_name_val": 1, "meth_name_val": 7}, project=None,
+    ga = RunAnalysis({"cs_name_val": 1, "meth_name_val": 7}, project=None,
                           mode="act", save_csv=False)
     # save_figs=False so these exercise only the show/close (per-job) path -- the save_figs=True
     # branch of plot_gp_fit calls the REMOVE-slated make_dir_name_from_criteria for path-naming
     # and is not part of what this guard is meant to protect going into the 7B trim.
-    plotter = Plotters(ga, save_figs=False)
-    # Plotters.plot_parameters -> parameter_trajectories -> __preprocess_analyze reads
+    plotter = Plotter(ga, save_figs=False)
+    # Plotter.plot_parameters -> parameter_trajectories -> __preprocess_analyze reads
     # sp_data["num_theta_multiplier"] (num_train_points = num_theta_multiplier * num_params),
     # a key the 8 existing checks' fixture never needed. That method reads the statepoint from
     # the workspace FILE (job.fn("signac_statepoint.json")), not from job.sp, so the augmented
@@ -217,7 +217,7 @@ def run_analysis(ws):
         # above. Prior to this, gp_heat_map_data's EI path was only ever exercised on method 7.
         "gp_heat_map_data_ei_method1": lambda: ga.gp_heat_map_data(jc_method1, 1, 1, 0, get_ei=True),
         "gp_heat_map_data_ei_method6": lambda: ga.gp_heat_map_data(jc_method6, 1, 1, 0, get_ei=True),
-        # Plotting smoke checks (7B guard): these are the KEEP (per-job) Plotters entry points
+        # Plotting smoke checks (7B guard): these are the KEEP (per-job) Plotter entry points
         # that will survive the analysis.py/plotting.py trim. They had zero test coverage before
         # this, so this pins their structure (axes/lines/collections counts) ahead of the trim --
         # a regression here would otherwise only surface as a silent blank/broken plot.
