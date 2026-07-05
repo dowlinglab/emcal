@@ -31,19 +31,19 @@ class GpflowBackend(GPBackend):
         )
         return gpflow.Parameter(initial_value, transform=sigmoid, dtype=tf.float64)
 
-    def build_model(self, data, kernel_value, lenscls, tau, white_var,
+    def build_model(self, data, kernel_value, lengthscales, outputscale, white_var,
                     fix_lengthscale, fix_outputscale, noise_variance=1e-5):
         """See GPBackend.build_model. kernel_value selects the base kernel
         (3=SquaredExponential, 2=Matern32, else Matern52); a White noise kernel is
         always added on top."""
         if kernel_value == 3:
             gpKernel = gpflow.kernels.SquaredExponential(
-                variance=tau, lengthscales=lenscls
+                variance=outputscale, lengthscales=lengthscales
             )
         elif kernel_value == 2:
-            gpKernel = gpflow.kernels.Matern32(variance=tau, lengthscales=lenscls)
+            gpKernel = gpflow.kernels.Matern32(variance=outputscale, lengthscales=lengthscales)
         else:
-            gpKernel = gpflow.kernels.Matern52(variance=tau, lengthscales=lenscls)
+            gpKernel = gpflow.kernels.Matern52(variance=outputscale, lengthscales=lengthscales)
         # Add White kernel
         gpKernel = gpKernel + gpflow.kernels.White(variance=white_var)
 

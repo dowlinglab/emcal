@@ -57,10 +57,10 @@ class FakeGPBackend(GPBackend):
         # this backend's own build_model, so a plain pass-through is sufficient.
         return np.asarray(initial_value, dtype=float)
 
-    def build_model(self, data, kernel_value, lenscls, tau, white_var,
+    def build_model(self, data, kernel_value, lengthscales, outputscale, white_var,
                      fix_lengthscale, fix_outputscale, noise_variance=1e-5):
         model = SimpleNamespace(
-            data=data, kernel_value=kernel_value, lenscls=lenscls, tau=tau,
+            data=data, kernel_value=kernel_value, lengthscales=lengthscales, outputscale=outputscale,
             white_var=white_var, fix_lengthscale=fix_lengthscale,
             fix_outputscale=fix_outputscale, noise_variance=noise_variance,
         )

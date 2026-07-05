@@ -52,7 +52,7 @@ class GPBackend(ABC):
         """
 
     @abstractmethod
-    def build_model(self, data, kernel_value, lenscls, tau, white_var,
+    def build_model(self, data, kernel_value, lengthscales, outputscale, white_var,
                     fix_lengthscale, fix_outputscale, noise_variance=1e-5):
         """
         Build an (untrained) GP regression model.
@@ -63,9 +63,9 @@ class GPBackend(ABC):
             (X, y) training data
         kernel_value: int
             3=RBF, 2=Matern32, else Matern52
-        lenscls: object
+        lengthscales: object
             Lengthscale parameter(s), from make_bounded_parameter
-        tau: object
+        outputscale: object
             Outputscale parameter, from make_bounded_parameter
         white_var: object
             Noise/white-kernel variance parameter, from make_bounded_parameter

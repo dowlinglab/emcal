@@ -25,7 +25,7 @@ class GPEmulator:
     get_num_gp_data(): Defines the total number of all simulated accessible to the GP
     __set_lenscl_guess(lb, ub): Sets the lengthscale guess
     __set_white_kern(lb, ub): Sets the white kernel guess
-    __set_outputscl(lb, ub): Sets the outputscale (tau) guess
+    __set_outputscl(lb, ub): Sets the outputscale guess
     set_gp_model_data(): Sets training data for the GP model data
     __init_hyper_parameters(retrain_count): Initializes hyperparameters for the GP model
     set_gp_model(retrain_count): Builds the GP model
@@ -345,7 +345,7 @@ class GPEmulator:
 
         Returns
         -------
-        tau: float
+        outputscale: float
             Initial output scale guess for the GP model
 
         Notes
@@ -362,18 +362,18 @@ class GPEmulator:
                 scl_y = train_y
 
             c_guess = sum(scl_y.flatten() ** 2) / len(scl_y)
-            tau = c_guess
+            outputscale = c_guess
 
         elif isinstance(self.outputscl, (float, int, np.float64)):
             assert self.outputscl > 0, "outputscl must be positive int or float"
-            tau = self.outputscl
+            outputscale = self.outputscl
         else:
-            tau = 1.0
+            outputscale = 1.0
 
-        if not lb < tau < ub:
-            tau = 1.0
+        if not lb < outputscale < ub:
+            outputscale = 1.0
 
-        return tau
+        return outputscale
 
     def set_gp_model_data(self):
         """
@@ -419,9 +419,9 @@ class GPEmulator:
 
         Returns
         --------
-        lenscls: np.ndarray
+        lengthscales: np.ndarray
             The initial lengthscale of the GP model
-        tau: float
+        outputscale: float
             The initial output scale guess for the GP model
         white_var: float
             The initial white noise variance for the GP model
@@ -439,15 +439,15 @@ class GPEmulator:
         x_train, y_train = data
 
         if isinstance(self.lenscl, np.ndarray):
-            lenscls = self.bounded_parameter(
+            lengthscales = self.bounded_parameter(
                 lenscl_bnds[0], lenscl_bnds[1], self.lenscl
             )
         elif isinstance(self.lenscl, (int, float)):
-            lenscls = np.ones(x_train.shape[1]) * self.bounded_parameter(
+            lengthscales = np.ones(x_train.shape[1]) * self.bounded_parameter(
                 lenscl_bnds[0], lenscl_bnds[1], self.lenscl
             )
         if self.outputscl is not None:
-            tau = self.bounded_parameter(var_bnds[0], var_bnds[1], self.outputscl)
+            outputscale = self.bounded_parameter(var_bnds[0], var_bnds[1], self.outputscl)
 
         # On the 1st iteration, use initial guesses initialized to 1
         if retrain_count == 0:
@@ -455,9 +455,9 @@ class GPEmulator:
                 lengthscale_1 = self.bounded_parameter(
                     lenscl_bnds[0], lenscl_bnds[1], 1.0
                 )
-                lenscls = np.ones(x_train.shape[1]) * lengthscale_1
+                lengthscales = np.ones(x_train.shape[1]) * lengthscale_1
             if self.outputscl is None:
-                tau = self.bounded_parameter(var_bnds[0], var_bnds[1], 1.0)
+                outputscale = self.bounded_parameter(var_bnds[0], var_bnds[1], 1.0)
             white_var = self.bounded_parameter(
                 white_var_bnds[0], white_var_bnds[1], 1.0
             )
@@ -468,14 +468,14 @@ class GPEmulator:
                     self.__set_lenscl_guess(lenscl_bnds[0], lenscl_bnds[1]),
                     dtype="float64",
                 )
-                lenscls = self.bounded_parameter(
+                lengthscales = self.bounded_parameter(
                     lenscl_bnds[0], lenscl_bnds[1], initial_lenscls
                 )
             if self.outputscl is None:
                 initial_tau = np.array(
                     self.__set_outputscl(var_bnds[0], var_bnds[1]), dtype="float64"
                 )
-                tau = self.bounded_parameter(var_bnds[0], var_bnds[1], initial_tau)
+                outputscale = self.bounded_parameter(var_bnds[0], var_bnds[1], initial_tau)
             initial_white_var = np.array(
                 self.__set_white_kern(white_var_bnds[0], white_var_bnds[1]),
                 dtype="float64",
@@ -489,11 +489,11 @@ class GPEmulator:
                 initial_lenscls = np.array(
                     rng.uniform(0.1, 100.0, x_train.shape[1]), dtype="float64"
                 )
-                lenscls = self.bounded_parameter(
+                lengthscales = self.bounded_parameter(
                     lenscl_bnds[0], lenscl_bnds[1], initial_lenscls
                 )
             if self.outputscl is None:
-                tau = self.bounded_parameter(
+                outputscale = self.bounded_parameter(
                     var_bnds[0],
                     var_bnds[1],
                     np.array(rng.lognormal(0.0, 1.0), dtype="float64"),
@@ -503,7 +503,7 @@ class GPEmulator:
                 white_var_bnds[1],
                 np.array(rng.uniform(0.05, 10), dtype="float64"),
             )
-        return lenscls, tau, white_var
+        return lengthscales, outputscale, white_var
 
     def set_gp_model(self, retrain_count):
         """
@@ -529,15 +529,15 @@ class GPEmulator:
             isinstance(retrain_count, int) and retrain_count >= 0
         ), "retrain_count must be an int greater than or equal to 0"
         data = self.set_gp_model_data()
-        lenscls, tau, white_var = self.__init_hyper_parameters(retrain_count)
+        lengthscales, outputscale, white_var = self.__init_hyper_parameters(retrain_count)
 
         fix_lengthscale = isinstance(self.lenscl, (np.ndarray, float, int))
         fix_outputscale = self.outputscl is not None
         gp_model = self._backend.build_model(
             data,
             self.kernel.value,
-            lenscls,
-            tau,
+            lengthscales,
+            outputscale,
             white_var,
             fix_lengthscale,
             fix_outputscale,
