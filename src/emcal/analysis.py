@@ -250,7 +250,22 @@ class General_Analysis:
         return result_dir
 
     def str_to_array_df_col(self, str_arr):
+        """
+        Converts a DataFrame column value (loaded from CSV, so array-valued columns come
+        back as their str(np.ndarray) repr) back into a numeric np.ndarray.
 
+        Parameters
+        ----------
+        str_arr: str, list, or np.ndarray
+            The column value to convert. If not a str, it is passed through np.array()
+            unchanged (list/np.ndarray inputs occur when the DataFrame was not round
+            tripped through CSV).
+
+        Returns
+        -------
+        array_from_str: np.ndarray or float
+            The parsed array, or a scalar float if the array has exactly one element
+        """
         if isinstance(str_arr, str):
             cleaned_str1 = re.sub(r"\s+", " ", str_arr.strip())
             cleaned_str = re.sub(r"(-?\d+\.\d*|\d+)\s+", r"\1, ", cleaned_str1)
@@ -542,6 +557,24 @@ class General_Analysis:
         return col_name, data_names
 
     def best_error(self, job):
+        """
+        Gets the best (lowest) error and its corresponding parameter set for each restart
+        of a job, loading from a per-job CSV cache if present (or computing and caching it
+        from the pickled BO_Results_GPs.gz otherwise).
+
+        Parameters
+        ----------
+        job: signac.job.Job
+            The job to analyze
+
+        Returns
+        -------
+        be_list: np.ndarray or None
+            The best error for each restart, or None if BO_Results_GPs.gz doesn't exist
+        be_theta_list: np.ndarray or None
+            The parameter set at the best error for each restart, or None if
+            BO_Results_GPs.gz doesn't exist
+        """
         # Look for be data for job
         tab_data_path1 = os.path.join(job.fn("analysis_data"), "init_be_data.csv")
         tab_data_path2 = os.path.join(job.fn("analysis_data"), "init_be_theta_data.csv")

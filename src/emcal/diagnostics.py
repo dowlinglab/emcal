@@ -235,8 +235,36 @@ def fit_gp(
     Build and train the GP emulator for `method`, holding out a test set for evaluation.
 
     `sep_fact` is the fraction used for TRAINING (default 0.8 -> 20% held out), so this is
-    deliberately different from a full-data BO run (config.sep_fact). Returns a fitted
-    emulator with train/test populated (ready for evaluate_gp / plots / predict).
+    deliberately different from a full-data BO run (config.sep_fact).
+
+    Parameters
+    ----------
+    method: GPBOMethod
+        Class containing GPBO method information
+    simulator: Simulator
+        Class containing values of simulation parameters
+    exp_data: Data
+        Experimental data containing at least exp_data.x_vals, exp_data.y_vals
+    sim_data: Data
+        Simulation data used to build the emulator's training/test sets
+    sim_sse_data: Data
+        SSE-transformed simulation data (used for Type-1/emulator-of-SSE methods)
+    config: BOConfig
+        Class containing the values associated with BOConfig
+    val_data: Data or None, default None
+        Validation data, if any
+    val_sse_data: Data or None, default None
+        SSE-transformed validation data, if any
+    sep_fact: float, default 0.8
+        Fraction of data used for training (1 - sep_fact is held out as the test set)
+    shuffle_seed: int or None, default None
+        Seed for the train/test split
+
+    Returns
+    -------
+    emulator: ObjectiveGP or EmulatorGP
+        A fitted emulator with train/test data populated (ready for evaluate_gp / plots /
+        predict)
     """
     emulator = build_gp_emulator(
         method, sim_data, sim_sse_data, val_data, val_sse_data,
@@ -256,6 +284,18 @@ def evaluate_gp(emulator, label="held-out test"):
     Accuracy + uncertainty-calibration diagnostics on the emulator's held-out test set.
 
     `emulator` must be fitted with a non-trivial test split (see fit_gp with sep_fact < 1).
+
+    Parameters
+    ----------
+    emulator: ObjectiveGP or EmulatorGP
+        A fitted emulator with a non-trivial test split (see fit_gp)
+    label: str, default "held-out test"
+        Label attached to the returned GPDiagnostics (for reports/plots)
+
+    Returns
+    -------
+    diagnostics: GPDiagnostics
+        Accuracy + calibration diagnostics computed on the emulator's test set
     """
     gp_mean, gp_var = emulator.predict(target="test")
     actual = np.asarray(emulator.test_data.y_vals, dtype=float).ravel()
@@ -301,6 +341,19 @@ def cross_validate_gp(
         Number of random hold-out repeats to pool.
     base_seed : int, default 0
         Shuffle seeds are base_seed + repeat index (reproducible).
+    label : str or None, default None
+        Label attached to the returned GPDiagnostics. If None, a label is generated from
+        n_repeats/holdout_frac
+
+    Returns
+    -------
+    diagnostics: GPDiagnostics
+        Accuracy + calibration diagnostics pooled across all n_repeats hold-out repeats
+
+    Raises
+    ------
+    AssertionError
+        If holdout_frac is not in (0, 1) or n_repeats < 1
     """
     assert 0 < holdout_frac < 1, "holdout_frac must be in (0, 1)"
     assert n_repeats >= 1, "n_repeats must be >= 1"

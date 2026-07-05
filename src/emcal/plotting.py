@@ -35,7 +35,7 @@ class Plotters:
     __scale_z_data(data, z_choice): Scales the z data based on the z choice
     __set_ylab_from_z(z_choice): Returns the y label based on the z choice
     __get_data_to_bo_iter_term(data): Returns the data up to the termination of the BO iteration
-    __save_fig(save_path_to): Saves the figure to the save path
+    __save_fig(save_path): Saves the figure to the save path
     __create_subplots(subplots_needed, sharex = False, sharey = 'none'): Creates subplots based on the number of subplots needed
     __set_subplot_details(ax, x_space, data_df_j, x_label, y_label, title): Sets the details of the subplot
     __set_plot_titles(fig, title, x_label, y_label): Sets the title and labels of the plot
@@ -296,7 +296,8 @@ class Plotters:
 
         Returns
         --------
-        str: The formatted value
+        formatted_str: str
+            The formatted value
 
         Notes
         ------
@@ -365,7 +366,7 @@ class Plotters:
             elif "acq" == z_choice:
                 all_z_data.append(ei)
                 all_z_titles.append(r"$\Xi(\mathbf{\theta})$")
-                all_z_titles_pre.append("Aquisition Function, ")
+                all_z_titles_pre.append("Acquisition Function, ")
             else:
                 raise ValueError("choice must contain 'sim', 'mean', 'var', or 'acq'")
         return all_z_data, all_z_titles, all_z_titles_pre
@@ -784,7 +785,7 @@ class Plotters:
             theta = "\\theta}^{\prime}" + ")"
             y_label = label_g + theta
         if "acq" == z_choice:
-            label_a = "Aquisition Function, "
+            label_a = "Acquisition Function, "
             y_label = "\Xi(\mathbf{\\theta^*})"
         final_label = label_a + r"$" + y_label + "$"
         return final_label
@@ -800,7 +801,7 @@ class Plotters:
 
         Returns
         --------
-        data_df_j:np.ndarray
+        data_df_j: np.ndarray
             Data that is not numerically 0
         """
         # Remove elements that are numerically 0
