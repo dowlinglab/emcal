@@ -142,8 +142,8 @@ class GPEmulator:
         self.normalize = normalize
         # If normalize, create the scalers
         if normalize == True:
-            self.scalerX = RobustScaler(unit_variance=True)
-            self.scalerY = RobustScaler(unit_variance=True)
+            self.scaler_x = RobustScaler(unit_variance=True)
+            self.scaler_y = RobustScaler(unit_variance=True)
 
         # Resolve the GP library backend (gpflow by default). Selecting it here keeps the
         # heavy gpflow/TF import lazy: it only happens when a GPEmulator is constructed.
@@ -308,8 +308,8 @@ class GPEmulator:
         """
         # Set the noise guess or allow gp to tune the noise parameter
         if self.normalize:
-            self.scalerY.fit(self.train_data.y_vals.reshape(-1, 1))
-            sclr = np.float64(self.scalerY.scale_.item())
+            self.scaler_y.fit(self.train_data.y_vals.reshape(-1, 1))
+            sclr = np.float64(self.scaler_y.scale_.item())
         else:
             sclr = 1.0
 
@@ -357,7 +357,7 @@ class GPEmulator:
         if self.outputscl == None:
             train_y = self.train_data.y_vals.reshape(-1, 1)
             if self.normalize:
-                scl_y = self.scalerY.fit_transform(train_y)
+                scl_y = self.scaler_y.fit_transform(train_y)
             else:
                 scl_y = train_y
 
@@ -400,8 +400,8 @@ class GPEmulator:
         if self.normalize == True:
             # Update scaler to be the fitted scaler. This scaler will change as the training data is updated
             # Scale training data if necessary
-            ft_td_scl = self.scalerX.fit_transform(self.feature_train_data)
-            y_td_scl = self.scalerY.fit_transform(self.train_data.y_vals.reshape(-1, 1))
+            ft_td_scl = self.scaler_x.fit_transform(self.feature_train_data)
+            y_td_scl = self.scaler_y.fit_transform(self.train_data.y_vals.reshape(-1, 1))
         else:
             ft_td_scl = self.feature_train_data
             y_td_scl = self.train_data.y_vals.reshape(-1, 1)
@@ -633,7 +633,7 @@ class GPEmulator:
             data.reshape(1, -1)
         # scale eval_point if necessary
         if self.normalize == True:
-            eval_points = self.scalerX.transform(data)
+            eval_points = self.scaler_x.transform(data)
         else:
             eval_points = data
 
@@ -646,10 +646,10 @@ class GPEmulator:
 
         # Unscale gp_mean and gp_covariance
         if self.normalize == True:
-            gp_mean = self.scalerY.inverse_transform(
+            gp_mean = self.scaler_y.inverse_transform(
                 gp_mean_scl.reshape(-1, 1)
             ).flatten()
-            gp_covar = float(self.scalerY.scale_.item() ** 2) * gp_covar_scl
+            gp_covar = float(self.scaler_y.scale_.item() ** 2) * gp_covar_scl
         else:
             gp_mean = gp_mean_scl
             gp_covar = gp_covar_scl
