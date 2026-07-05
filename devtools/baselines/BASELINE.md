@@ -6,7 +6,7 @@ Captured 2026-07-01 on `gpbo-dev` (gpflow 2.9.1 / TF 2.15, macOS arm64). Re-veri
 
 ## Config (fixed)
 
-- iters=3, retrain_GP=3, reoptimize_obj=3, runs=1; sim_seed=1, run_seed=1, kernel=Matern5/2, ep0=1
+- iters=3, retrain_gp=3, reoptimize_obj=3, runs=1; sim_seed=1, run_seed=1, kernel=Matern5/2, ep0=1
 - GP optimizer: gpflow Scipy.minimize(compile=False) (deterministic). Full trajectories in `full/cs<CS>_m<M>.json`
 
 ## Result: 77/77 ok (CS12 m6 fixed in Phase 2d).

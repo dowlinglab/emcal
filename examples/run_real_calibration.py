@@ -51,14 +51,14 @@ def main():
     #        bounds and evaluate the model (no ground truth needed).
     n = len(sim.indices_to_consider)
     sim_data = sim.generate_simulation_data(
-        10 * n, len(x_measured), GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, w_noise=False
+        10 * n, len(x_measured), GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, with_noise=False
     )
     sim_sse_data = sim.to_sse_data(method, sim_data, exp_data, 1.0, False)
 
     # --- 4. Exploration bias + BO config, then run (job=None => signac-free, in-memory).
     ep_bias = ExplorationBias(1, None, EpSchedule.CONSTANT, None, None, None, None, None, None, None)
-    cfg = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_GP=10, reoptimize_obj=10,
-                   bo_iter_tot=10, bo_run_tot=1, get_y_sse=True)
+    cfg = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_gp=10, reoptimize_obj=10,
+                   bo_iter_tot=10, bo_run_tot=1, compute_y_sse=True)
     driver = GPBODriver(cfg, method, sim, exp_data, sim_data, sim_sse_data,
                         None, None, None, ep_bias, GenMethod.LHS)
     results_simple, results_gp = driver.run(job=None)

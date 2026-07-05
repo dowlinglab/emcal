@@ -28,12 +28,12 @@ def _objective_sim_data(n_theta=6, sep_fact=0.7):
                            bounds_x=BOUNDS_X, sep_fact=sep_fact)
 
 
-def _objective_gp(lenscl=None, outputscl=None, retrain_GP=1, normalize=False,
+def _objective_gp(lenscl=None, outputscl=None, retrain_gp=1, normalize=False,
                    sep_fact=0.7, n_theta=6, mean_value=2.0, variance_value=0.25):
     backend = FakeGPBackend(mean_value=mean_value, variance_value=variance_value)
     gp_sim_data = _objective_sim_data(n_theta=n_theta, sep_fact=sep_fact)
     gp = ObjectiveGP(gp_sim_data, None, None, None, None, Kernel.MAT_52, lenscl, None,
-                      outputscl, retrain_GP, 0, normalize,
+                      outputscl, retrain_gp, 0, normalize,
                       backend=backend)
     gp.split_train_test(sep_fact, shuffle_seed=0)
     return gp, backend
@@ -50,12 +50,12 @@ def _emulator_sim_data(n_theta_unique=4, n_x=3, sep_fact=0.75):
     return data, x_unique
 
 
-def _emulator_gp(lenscl=None, outputscl=None, retrain_GP=1, normalize=False,
+def _emulator_gp(lenscl=None, outputscl=None, retrain_gp=1, normalize=False,
                   sep_fact=0.75, n_theta_unique=4, n_x=3, mean_value=1.0, variance_value=0.1):
     backend = FakeGPBackend(mean_value=mean_value, variance_value=variance_value)
     gp_sim_data, x_unique = _emulator_sim_data(n_theta_unique, n_x, sep_fact)
     gp = EmulatorGP(gp_sim_data, None, None, None, None, Kernel.MAT_52, lenscl, None,
-                     outputscl, retrain_GP, 0, normalize,
+                     outputscl, retrain_gp, 0, normalize,
                      backend=backend)
     gp.split_train_test(sep_fact, shuffle_seed=0)
     return gp, backend, x_unique
@@ -101,11 +101,11 @@ def test_emulator_split_train_test_partitions_by_unique_theta():
 
 # --- fit(): backend interaction across hyperparameter-guessing branches --------------
 
-@pytest.mark.parametrize("retrain_GP", [0, 1, 2, 3])
-def test_objective_fit_calls_backend_train_once_per_retrain(retrain_GP):
-    gp, backend = _objective_gp(retrain_GP=retrain_GP)
+@pytest.mark.parametrize("retrain_gp", [0, 1, 2, 3])
+def test_objective_fit_calls_backend_train_once_per_retrain(retrain_gp):
+    gp, backend = _objective_gp(retrain_gp=retrain_gp)
     gp.fit()
-    assert len(backend.train_calls) == retrain_GP
+    assert len(backend.train_calls) == retrain_gp
     assert gp.trained_hyperparams == backend.hyperparams
     assert gp.posterior is not None
 
@@ -114,7 +114,7 @@ def test_objective_fit_calls_backend_train_once_per_retrain(retrain_GP):
     (None, None), (1.0, 1.0), (np.array([1.0, 1.0]), None),
 ])
 def test_objective_fit_handles_fixed_and_guessed_hyperparameters(lenscl, outputscl):
-    gp, backend = _objective_gp(lenscl=lenscl, outputscl=outputscl, retrain_GP=1)
+    gp, backend = _objective_gp(lenscl=lenscl, outputscl=outputscl, retrain_gp=1)
     gp.fit()
     assert len(backend.train_calls) == 1
 
@@ -127,7 +127,7 @@ def test_objective_fit_with_normalize_runs_and_predicts_finite():
 
 
 def test_emulator_fit_calls_backend_train_once_per_retrain():
-    gp, backend, _ = _emulator_gp(retrain_GP=2)
+    gp, backend, _ = _emulator_gp(retrain_gp=2)
     gp.fit()
     assert len(backend.train_calls) == 2
 

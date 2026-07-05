@@ -28,10 +28,10 @@ def main():
     exp_data = sim.generate_experimental_data(5, GenMethod.MESHGRID, None, 0.01)
     n = len(sim.indices_to_consider)
     sim_data = sim.generate_simulation_data(
-        10 * n, 5, GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, w_noise=False
+        10 * n, 5, GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, with_noise=False
     )
     sim_sse_data = sim.to_sse_data(method, sim_data, exp_data, 1.0, False)
-    config = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_GP=25, reoptimize_obj=10)
+    config = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_gp=25, reoptimize_obj=10)
 
     # 1. Single held-out split: accuracy + uncertainty calibration.
     emulator = diagnostics.fit_gp(

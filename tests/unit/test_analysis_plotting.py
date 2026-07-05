@@ -40,7 +40,7 @@ def _build_job_ctx(tmp_path_factory, method_val, backend=None):
     exp = sim.generate_experimental_data(5, GenMethod(2), None, 0.01)
     ep = ExplorationBias(1, None, EpSchedule(1), None, None, None, None, None, None, None)
     simd = sim.generate_simulation_data(
-        20, 5, GenMethod(1), GenMethod(2), 1.0, 1, False, None, w_noise=False
+        20, 5, GenMethod(1), GenMethod(2), 1.0, 1, False, None, with_noise=False
     )
     ssed = sim.to_sse_data(method, simd, exp, 1.0, False)
     cfg = BOConfig(problem.name, 1, 1.0, True, Kernel(1), None, None,
@@ -65,9 +65,9 @@ def _build_job_ctx(tmp_path_factory, method_val, backend=None):
     # BOConfig exactly so __rebuild_cs (gp_heat_map_data) reproduces the saved run.
     sp = {"cs_name_val": 1, "meth_name_val": method_val, "ep_enum_val": 1, "bo_run_num": 1,
           "bo_run_tot": 1, "kernel_enum_val": 1, "gen_meth_theta": 1,
-          "bo_runs_in_job": 1, "bo_iter_tot": 3, "w_noise": False,
+          "bo_runs_in_job": 1, "bo_iter_tot": 3, "with_noise": False,
           "ep0": 1, "sep_fact": 1.0, "normalize": True, "lenscl": None, "outputscl": None,
-          "retrain_GP": 3, "reoptimize_obj": 3, "gen_heat_map_data": False,
+          "retrain_gp": 3, "reoptimize_obj": 3, "gen_heat_map_data": False,
           "seed": 1, "obj_tol": 1e-7, "ei_tol": 1e-7}
     with open(ws / "signac_statepoint.json", "w") as f:
         json.dump(sp, f)

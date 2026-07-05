@@ -32,12 +32,12 @@ sim = make_case_study_simulator(problem, 0, None, 1)
 exp = sim.generate_experimental_data(5, GenMethod.MESHGRID, None, 0.01)
 n = len(sim.indices_to_consider)
 sim_data = sim.generate_simulation_data(
-    10 * n, 5, GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, w_noise=False
+    10 * n, 5, GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, with_noise=False
 )
 sse_data = sim.to_sse_data(method, sim_data, exp, 1.0, False)
 
 ep = ExplorationBias(1, None, EpSchedule.CONSTANT, None, None, None, None, None, None, None)
-config = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_GP=10, reoptimize_obj=10,
+config = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_gp=10, reoptimize_obj=10,
                   bo_iter_tot=10, bo_run_tot=1)
 
 driver = GPBODriver(config, method, sim, exp, sim_data, sse_data,

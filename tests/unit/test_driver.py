@@ -26,9 +26,9 @@ EXPECTED_COLUMNS = [
 
 
 def _build_driver(method_val=7, mean_value=1.0, variance_value=0.25, bo_iter_tot=3,
-                   retrain_GP=1, reoptimize_obj=1, gen_heat_map_data=False, seed=1,
+                   retrain_gp=1, reoptimize_obj=1, gen_heat_map_data=False, seed=1,
                    bo_run_tot=1):
-    # get_y_sse=True is required for method 7 (E[SSE]): __run_bo_iter reads
+    # compute_y_sse=True is required for method 7 (E[SSE]): __run_bo_iter reads
     # acq_sse_theta_data.y_vals unconditionally when assembling sse_at_acq, matching the
     # pattern already established in tests/unit/test_end_to_end.py.
     method = GPBOMethod(MethodName(method_val))
@@ -37,14 +37,14 @@ def _build_driver(method_val=7, mean_value=1.0, variance_value=0.25, bo_iter_tot
     exp = sim.generate_experimental_data(5, GenMethod.MESHGRID, None, 0.01)
     n = len(sim.indices_to_consider)
     simd = sim.generate_simulation_data(
-        10 * n, 5, GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, w_noise=False
+        10 * n, 5, GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, with_noise=False
     )
     ssed = sim.to_sse_data(method, simd, exp, 1.0, False)
     ep = ExplorationBias(1, None, EpSchedule.CONSTANT, None, None, None, None, None, None, None)
-    cfg = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_GP=retrain_GP,
+    cfg = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_gp=retrain_gp,
                     reoptimize_obj=reoptimize_obj, bo_iter_tot=bo_iter_tot,
                     bo_run_tot=bo_run_tot, gen_heat_map_data=gen_heat_map_data, seed=seed,
-                    get_y_sse=True)
+                    compute_y_sse=True)
     backend = FakeGPBackend(mean_value=mean_value, variance_value=variance_value)
     driver = GPBODriver(cfg, method, sim, exp, simd, ssed, None, None, None, ep,
                          GenMethod.LHS, backend=backend)
@@ -115,7 +115,7 @@ def test_run_trains_a_fresh_emulator_each_restart():
 
 
 def test_run_calls_backend_train_exactly_bo_iter_tot_times_retrain_gp():
-    driver, backend = _build_driver(bo_iter_tot=3, retrain_GP=2)
+    driver, backend = _build_driver(bo_iter_tot=3, retrain_gp=2)
     driver.run(job=None)
     assert len(backend.train_calls) == 3 * 2
 

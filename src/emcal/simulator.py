@@ -506,7 +506,7 @@ class Simulator:
         set_seed = None,
         gen_val_data=False,
         x_vals = None,
-        w_noise = False,
+        with_noise = False,
     ):
         """
         Generates simulated data in an instance of the Data class
@@ -529,7 +529,7 @@ class Simulator:
             Whether validation data (no y vals) or simulation data (has y vals) will be generated
         x_vals: np.ndarray or None, default None
             X values to use for simulation data. If None, x_vals will be generated based on bounds and num_x_data
-        w_noise: bool, default False
+        with_noise: bool, default False
             Whether to generate data with noise
 
         Returns
@@ -632,7 +632,7 @@ class Simulator:
         sim_data.x_vals = np.vstack([x_data] * repeat_x)
 
         # Add y_vals for sim_data
-        if w_noise == False:
+        if with_noise == False:
             #Default to noiseless training data
             sim_data.y_vals = self.evaluate_model(sim_data, self.noise_mean, 0, rng)
         else:

@@ -144,10 +144,10 @@ def _build(method_val, retrain=20):
     sim = make_case_study_simulator(problem, 0, None, 1)
     exp = sim.generate_experimental_data(5, GenMethod.MESHGRID, None, 0.01)
     simd = sim.generate_simulation_data(
-        20, 5, GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, w_noise=False
+        20, 5, GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, with_noise=False
     )
     ssed = sim.to_sse_data(method, simd, exp, 1.0, False)
-    cfg = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_GP=retrain, reoptimize_obj=3)
+    cfg = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_gp=retrain, reoptimize_obj=3)
     return method, sim, exp, simd, ssed, cfg
 
 

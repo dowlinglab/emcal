@@ -8,10 +8,10 @@ from emcal import BOConfig, Kernel
 def _valid_kwargs(**over):
     kw = dict(
         cs_name="CS1", ep0=1, sep_fact=1.0, normalize=True, kernel=Kernel(1),
-        lenscl=None, outputscl=None, retrain_GP=3, reoptimize_obj=3,
+        lenscl=None, outputscl=None, retrain_gp=3, reoptimize_obj=3,
         gen_heat_map_data=False, bo_iter_tot=3, bo_run_tot=1, save_data=False,
-        DateTime=None, seed=1, obj_tol=1e-7, acq_tol=1e-7, get_y_sse=True,
-        w_noise=False,
+        created_at=None, seed=1, obj_tol=1e-7, acq_tol=1e-7, compute_y_sse=True,
+        with_noise=False,
     )
     kw.update(over)
     return kw
@@ -21,7 +21,7 @@ def test_defaults_and_seed_field():
     c = BOConfig()
     assert c.seed == 1                 # set_seed -> seed field
     assert c.kernel == Kernel(1)
-    assert c.DateTime is not None      # filled in when None
+    assert c.created_at is not None      # filled in when None
 
 
 def test_positional_construction_matches_fields():
@@ -30,8 +30,8 @@ def test_positional_construction_matches_fields():
                  3, 1, False, None, 5, 1e-7, 1e-7, True, False)
     assert c.cs_name == "CS1"
     assert c.seed == 5
-    assert c.get_y_sse is True
-    assert c.w_noise is False
+    assert c.compute_y_sse is True
+    assert c.with_noise is False
 
 
 def test_lenscl_list_becomes_array():
@@ -44,7 +44,7 @@ def test_lenscl_list_becomes_array():
     dict(sep_fact=5.0),      # must be in (0, 1]
     dict(sep_fact=0.0),      # not including zero
     dict(bo_iter_tot=0),     # must be > 0
-    dict(retrain_GP=-1),     # must be >= 0
+    dict(retrain_gp=-1),     # must be >= 0
     dict(seed=0),            # int >= 1 or None
     dict(outputscl=-1.0),    # > 0 if given
     dict(acq_tol=-1e-7),     # >= 0

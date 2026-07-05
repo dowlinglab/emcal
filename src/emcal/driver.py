@@ -33,7 +33,7 @@ class GPBODriver:
     __gen_emulator()
     __get_best_error()
     __make_starting_opt_pts(best_error_metrics, rng_seed)
-    __opt_with_scipy(opt_obj, get_y, w_noise)
+    __opt_with_scipy(opt_obj, get_y, with_noise)
     __scipy_fxn(theta, opt_obj, best_error_metrics)
     create_heat_map_param_data(n_points_set)
     __augment_train_data(theta_best_data)
@@ -213,7 +213,7 @@ class GPBODriver:
             self.cs_params.kernel,
             self.cs_params.lenscl,
             self.cs_params.outputscl,
-            self.cs_params.retrain_GP,
+            self.cs_params.retrain_gp,
             self.cs_params.seed,
             self.cs_params.normalize,
             self.simulator.noise_std,
@@ -252,7 +252,7 @@ class GPBODriver:
         self.acq_optimizer.opt_start_pts = starting_pts
         return starting_pts
 
-    def __opt_with_scipy(self, opt_obj, get_y = False, w_noise = False):
+    def __opt_with_scipy(self, opt_obj, get_y = False, with_noise = False):
         """
         Optimizes a function with scipy.optimize
 
@@ -262,7 +262,7 @@ class GPBODriver:
             Which objective to calculate. neg_ei, E[SSE], or SSE
         get_y: bool, default False
             Whether to return the y values of the optimized theta
-        w_noise: bool, default False
+        with_noise: bool, default False
             Whether to return the y values with noise
 
         Returns
@@ -279,7 +279,7 @@ class GPBODriver:
         """
         # Seam #2: thread the driver's own rng_set Generator explicitly -- the optimizer
         # must never own/cache its own rng reference (PHASE8_AUDIT.md §3.8, risk #2).
-        return self.acq_optimizer.optimize(opt_obj, self.rng_set, get_y=get_y, w_noise=w_noise)
+        return self.acq_optimizer.optimize(opt_obj, self.rng_set, get_y=get_y, with_noise=with_noise)
 
     def __scipy_fxn(self, theta, opt_obj, best_error_metrics):
         """
@@ -446,7 +446,7 @@ class GPBODriver:
         # Augment training theta, x, and y/sse data
         self.gp_emulator.append_training_point(theta_best_data)
 
-    def create_data_instance_from_theta(self, theta_array, get_y=True, w_noise = False):
+    def create_data_instance_from_theta(self, theta_array, get_y=True, with_noise = False):
         """
         Creates instance of Data from an np.ndarray parameter set
 
@@ -456,7 +456,7 @@ class GPBODriver:
             Array of parameter values to turn into an instance of Data
         get_y: bool, default True
             Whether to calculate y values for theta_array
-        w_noise: bool, default False
+        with_noise: bool, default False
             Whether to add noise to the y values
 
         Returns
@@ -471,7 +471,7 @@ class GPBODriver:
         """
         return create_data_instance_from_theta(
             theta_array, self.method, self.simulator, self.exp_data,
-            self.cs_params.sep_fact, get_y=get_y, w_noise=w_noise, rng=self.rng_set,
+            self.cs_params.sep_fact, get_y=get_y, with_noise=with_noise, rng=self.rng_set,
         )
 
     def __run_bo_iter(self, iteration):
@@ -553,12 +553,12 @@ class GPBODriver:
         self.opt_start_pts = self.__make_starting_opt_pts(best_error_metrics, iter_seed)
 
         # Call optimize E[SSE] or log(E[SSE]) objective function
-        # Note if we didn't want actual sse values, we would have to set get_y_sse = False
-        min_sse, min_theta_data, min_sse_prediction = self.__opt_with_scipy("sse", get_y = self.cs_params.get_y_sse, w_noise = self.cs_params.w_noise)
+        # Note if we didn't want actual sse values, we would have to set compute_y_sse = False
+        min_sse, min_theta_data, min_sse_prediction = self.__opt_with_scipy("sse", get_y = self.cs_params.compute_y_sse, with_noise = self.cs_params.with_noise)
 
         # Call optimize EI acquistion fxn (If not using E[SSE])
         if self.method.method_name.value != 7:
-            opt_acq, acq_theta_data, best_prediction = self.__opt_with_scipy("neg_ei", get_y = True, w_noise = self.cs_params.w_noise)
+            opt_acq, acq_theta_data, best_prediction = self.__opt_with_scipy("neg_ei", get_y = True, with_noise = self.cs_params.with_noise)
             if self.method.is_emulator == True:
                 ei_args = dict(
                     data=acq_theta_data,
@@ -578,7 +578,7 @@ class GPBODriver:
                     gp_prediction=best_prediction,
                 )
         else:
-            opt_acq, acq_theta_data, best_prediction = self.__opt_with_scipy("E_sse", get_y = True, w_noise = self.cs_params.w_noise)
+            opt_acq, acq_theta_data, best_prediction = self.__opt_with_scipy("E_sse", get_y = True, with_noise = self.cs_params.with_noise)
 
         # If type 2, turn it into sse_data
         # Set the best data to be in sse form if using a type 2 GP and find the min sse
@@ -637,7 +637,7 @@ class GPBODriver:
         # Create Results Pandas DataFrame for 1 iter
         num_exp_x = self.exp_data.n_x
         # Return SSE and not log(SSE) for 'Min Obj', 'sse_actual', 'sse_gp' when calculating MSE
-        if self.cs_params.get_y_sse:
+        if self.cs_params.compute_y_sse:
             min_sse_sim = float(np.asarray(min_sse_theta_data.y_vals).item())
         else:
             min_sse_sim = None
@@ -857,7 +857,7 @@ class GPBODriver:
         results_df["total_time"] = float(results_df["time_per_iter"].sum())
 
         results_df["best_sse_gp"] = np.minimum.accumulate(results_df["sse_gp"])
-        if self.cs_params.get_y_sse == True:
+        if self.cs_params.compute_y_sse == True:
             results_df["best_sse_actual"] = np.minimum.accumulate(results_df["sse_actual"])
         else:
             results_df["best_sse_actual"] = None
@@ -874,10 +874,10 @@ class GPBODriver:
                         results_df["theta_best_at_acq"].iloc[i - 1].copy()
                     )
                 #If we are tracking actual values, update as normal, otherwise follow the same trend os the GP SSE
-                if (self.cs_params.get_y_sse == True and
+                if (self.cs_params.compute_y_sse == True and
                     results_df["best_sse_actual"].iloc[i]
                     >= results_df["best_sse_actual"].iloc[i - 1] 
-                ) or (self.cs_params.get_y_sse == False and results_df["best_sse_gp"].iloc[i]
+                ) or (self.cs_params.compute_y_sse == False and results_df["best_sse_gp"].iloc[i]
                     >= results_df["best_sse_gp"].iloc[i - 1]):
                     results_df.at[i, "theta_best_actual"] = (
                         results_df["theta_best_actual"].iloc[i - 1].copy()
@@ -995,7 +995,7 @@ class GPBODriver:
         
         simulator_class = self.simulator
         configuration = {
-            "DateTime String": self.cs_params.DateTime,
+            "Created At String": self.cs_params.created_at,
             "Method Name Enum Value": self.method.method_name.value,
             "Case Study Name": self.cs_params.cs_name,
             "Number of Parameters": len(self.simulator.theta_true_names),
@@ -1006,7 +1006,7 @@ class GPBODriver:
             "Initial Kernel": self.cs_params.kernel,
             "Initial Lengthscale": self.cs_params.lenscl,
             "Initial Outputscale": self.cs_params.outputscl,
-            "Retrain GP": self.cs_params.retrain_GP,
+            "Retrain GP": self.cs_params.retrain_gp,
             "Reoptimize Obj": self.cs_params.reoptimize_obj,
             "Heat Map Points Generated": self.cs_params.gen_heat_map_data,
             "Max BO Iters": self.cs_params.bo_iter_tot,
@@ -1016,8 +1016,8 @@ class GPBODriver:
             "MC SG Max Points": self.sg_mc_samples,
             "Obj Improvement Tolerance": self.cs_params.obj_tol,
             "Theta Generation Enum Value": self.gen_meth_theta.value,
-            "Gen y with Noise": self.cs_params.w_noise,
-            "Gen y for Minimized SSE": self.cs_params.get_y_sse,
+            "Gen y with Noise": self.cs_params.with_noise,
+            "Gen y for Minimized SSE": self.cs_params.compute_y_sse,
         }
 
         #If some runs have already been completed
@@ -1084,7 +1084,7 @@ class GPBODriver:
         restart_bo_results: list of class instances of BO_results, The results of all restarts of the BO workflow for reproduction
         """
         ##Define a path for the data. (Use the name of the case study and date)
-        #Get Date only from DateTime String
+        #Get Date only from Created At String
         savepath1 = job.fn("BO_Results.gz")
         # savepath1 = "BO_Results.gz"
         fileObj1 = gzip.open(savepath1, "wb", compresslevel=1)
@@ -1099,7 +1099,7 @@ class GPBODriver:
 
 
 def create_data_instance_from_theta(
-    theta_array, method, simulator, exp_data, sep_fact, get_y=True, w_noise=False,
+    theta_array, method, simulator, exp_data, sep_fact, get_y=True, with_noise=False,
     rng=None,
 ):
     """
@@ -1119,7 +1119,7 @@ def create_data_instance_from_theta(
         The separation factor that decides what percentage of data will be training data
     get_y: bool, default True
         Whether to calculate y values for theta_array
-    w_noise: bool, default False
+    with_noise: bool, default False
         Whether to add noise to the y values
     rng: np.random.Generator or None, default None
         The random number generator used for noise generation
@@ -1154,7 +1154,7 @@ def create_data_instance_from_theta(
         sep_fact=sep_fact,
     )
     if get_y:
-        if w_noise:
+        if with_noise:
             # Calculate y values and sse for theta_best with noise
             theta_arr_data.y_vals = simulator.evaluate_model(
                 theta_arr_data, simulator.noise_mean, simulator.noise_std, rng

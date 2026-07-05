@@ -129,10 +129,10 @@
           "obj_tol",
           "outputscl",
           "reoptimize_obj",
-          "retrain_GP",
+          "retrain_gp",
           "seed",
           "sep_fact",
-          "w_noise"
+          "with_noise"
         ]
       }
     ]
@@ -192,10 +192,10 @@
           "obj_tol",
           "outputscl",
           "reoptimize_obj",
-          "retrain_GP",
+          "retrain_gp",
           "seed",
           "sep_fact",
-          "w_noise"
+          "with_noise"
         ]
       },
       {
@@ -259,10 +259,10 @@
           "obj_tol",
           "outputscl",
           "reoptimize_obj",
-          "retrain_GP",
+          "retrain_gp",
           "seed",
           "sep_fact",
-          "w_noise"
+          "with_noise"
         ]
       }
     ]
@@ -358,10 +358,10 @@
           "obj_tol",
           "outputscl",
           "reoptimize_obj",
-          "retrain_GP",
+          "retrain_gp",
           "seed",
           "sep_fact",
-          "w_noise"
+          "with_noise"
         ]
       }
     ]
@@ -439,10 +439,10 @@
           "obj_tol",
           "outputscl",
           "reoptimize_obj",
-          "retrain_GP",
+          "retrain_gp",
           "seed",
           "sep_fact",
-          "w_noise"
+          "with_noise"
         ]
       }
     ]
@@ -520,10 +520,10 @@
           "obj_tol",
           "outputscl",
           "reoptimize_obj",
-          "retrain_GP",
+          "retrain_gp",
           "seed",
           "sep_fact",
-          "w_noise"
+          "with_noise"
         ]
       }
     ]
@@ -601,10 +601,10 @@
           "obj_tol",
           "outputscl",
           "reoptimize_obj",
-          "retrain_GP",
+          "retrain_gp",
           "seed",
           "sep_fact",
-          "w_noise"
+          "with_noise"
         ]
       }
     ]

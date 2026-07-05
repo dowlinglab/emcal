@@ -28,7 +28,7 @@ def test_simulation_data_dimensions():
     sim.generate_experimental_data(5, GenMethod.MESHGRID, None, 0.01)
     n = len(sim.indices_to_consider)               # 2 for CS1
     sim_data = sim.generate_simulation_data(
-        10 * n, 5, GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, w_noise=False
+        10 * n, 5, GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, with_noise=False
     )
     assert sim_data.theta_dim == n
 

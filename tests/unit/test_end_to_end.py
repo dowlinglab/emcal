@@ -21,7 +21,7 @@ def test_simple_linear_bo_completes():
     exp = sim.generate_experimental_data(5, GenMethod(2), None, 0.01)
     n = len(sim.indices_to_consider)
     simd = sim.generate_simulation_data(
-        10 * n, 5, GenMethod(1), GenMethod(2), 1.0, 1, False, None, w_noise=False
+        10 * n, 5, GenMethod(1), GenMethod(2), 1.0, 1, False, None, with_noise=False
     )
     ssed = sim.to_sse_data(method, simd, exp, 1.0, False)
     ep = ExplorationBias(1, None, EpSchedule(1), None, None, None, None, None, None, None)
@@ -55,12 +55,12 @@ def test_real_calibration_runs_end_to_end():
     exp = sim.set_experimental_data(*problem.experimental_data)
     n = len(sim.indices_to_consider)
     simd = sim.generate_simulation_data(
-        10 * n, 6, GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, w_noise=False
+        10 * n, 6, GenMethod.LHS, GenMethod.MESHGRID, 1.0, 1, False, None, with_noise=False
     )
     ssed = sim.to_sse_data(method, simd, exp, 1.0, False)
     ep = ExplorationBias(1, None, EpSchedule.CONSTANT, None, None, None, None, None, None, None)
-    cfg = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_GP=5, reoptimize_obj=5,
-                   bo_iter_tot=5, bo_run_tot=1, get_y_sse=True)
+    cfg = BOConfig(problem.name, kernel=Kernel.MAT_52, retrain_gp=5, reoptimize_obj=5,
+                   bo_iter_tot=5, bo_run_tot=1, compute_y_sse=True)
     res_simple, _ = GPBODriver(cfg, method, sim, exp, simd, ssed,
                                None, None, None, ep, GenMethod.LHS).run(job=None)
     best = float(res_simple[0].results_df.tail(1)["best_sse_actual"].iloc[0])

@@ -57,7 +57,7 @@ def run_once(cs_val, meth_val, iters, runs):
     exp = sim.generate_experimental_data(nx, gmx, xv, 0.01)
     ep = ExplorationBias(1, None, ep_enum, None, None, None, None, None, None, None)
     nth = len(sim.indices_to_consider) * 10
-    simd = sim.generate_simulation_data(nth, nx, gmt, gmx, 1.0, 1, False, xv, w_noise=False)
+    simd = sim.generate_simulation_data(nth, nx, gmt, gmx, 1.0, 1, False, xv, with_noise=False)
     ssed = sim.to_sse_data(method, simd, exp, 1.0, False)
     name = problem.name
     csp = BOConfig(name, 1, 1.0, True, kernel, None, None, 25, 25,

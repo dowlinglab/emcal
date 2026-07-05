@@ -34,7 +34,7 @@ class BOConfig:
         Lengthscale hyperparameter value; None trains it. Lists are stored as arrays.
     outputscl: float, int, or None, default None
         Outputscale value; None trains it. Must be > 0 if given.
-    retrain_GP: int, default 25
+    retrain_gp: int, default 25
         Number of GP (re)training rounds (0 = use initial hyperparameters).
     reoptimize_obj: int, default 25
         Number of acquisition/objective reoptimizations (0 = 1 optimization).
@@ -46,7 +46,7 @@ class BOConfig:
         Total number of BO restarts (> 0).
     save_data: bool, default False
         Save EI data for the argmax(EI) theta.
-    DateTime: str or None, default None
+    created_at: str or None, default None
         Run timestamp; None fills in the current date/time.
     seed: int or None, default 1
         RNG seed (int >= 1) or None for random. (Formerly the ``set_seed`` argument.)
@@ -54,9 +54,9 @@ class BOConfig:
         Objective-difference termination tolerance (rho_1, >= 0).
     acq_tol: float, default 1e-7
         Acquisition-value termination tolerance (rho_2, >= 0).
-    get_y_sse: bool, default False
+    compute_y_sse: bool, default False
         Compute the simulated y value when SSE is locally minimized.
-    w_noise: bool, default False
+    with_noise: bool, default False
         Include noise in the simulation data.
 
     Raises
@@ -74,18 +74,18 @@ class BOConfig:
     kernel: "Kernel" = Kernel(1)
     lenscl: object = None
     outputscl: object = None
-    retrain_GP: int = 25
+    retrain_gp: int = 25
     reoptimize_obj: int = 25
     gen_heat_map_data: bool = False
     bo_iter_tot: int = 10
     bo_run_tot: int = 1
     save_data: bool = False
-    DateTime: object = None
+    created_at: object = None
     seed: object = 1
     obj_tol: float = 1e-7
     acq_tol: float = 1e-7
-    get_y_sse: bool = False
-    w_noise: bool = False
+    compute_y_sse: bool = False
+    with_noise: bool = False
 
     def __post_init__(self):
         """
@@ -111,8 +111,8 @@ class BOConfig:
         ), "normalize, gen_heat_map_data, and save_data must be bool"
         assert all(
             isinstance(var, int)
-            for var in [self.bo_iter_tot, self.bo_run_tot, self.retrain_GP, self.reoptimize_obj]
-        ), "bo_iter_tot, bo_run_tot, retrain_GP, and reoptimize_obj must be int"
+            for var in [self.bo_iter_tot, self.bo_run_tot, self.retrain_gp, self.reoptimize_obj]
+        ), "bo_iter_tot, bo_run_tot, retrain_gp, and reoptimize_obj must be int"
         assert self.seed is None or (
             isinstance(self.seed, int) and self.seed >= 1
         ), "seed must be int >= 1 or None"
@@ -126,8 +126,8 @@ class BOConfig:
         if isinstance(self.lenscl, list):
             self.lenscl = np.array(self.lenscl)
 
-        assert isinstance(self.get_y_sse, bool), "get_y_sse must be bool"
-        assert isinstance(self.w_noise, bool), "w_noise must be bool"
+        assert isinstance(self.compute_y_sse, bool), "compute_y_sse must be bool"
+        assert isinstance(self.with_noise, bool), "with_noise must be bool"
         assert (
             isinstance(self.lenscl, (float, int, np.ndarray)) or self.lenscl is None
         ), "lenscl must be float, int, np.ndarray, or None"
@@ -148,11 +148,11 @@ class BOConfig:
             var > 0 for var in [self.bo_iter_tot, self.bo_run_tot]
         ), "bo_iter_tot and bo_run_tot must be > 0"
         assert all(
-            var >= 0 for var in [self.retrain_GP, self.reoptimize_obj]
-        ), "retrain_GP and reoptimize_obj must be >= 0"
+            var >= 0 for var in [self.retrain_gp, self.reoptimize_obj]
+        ), "retrain_gp and reoptimize_obj must be >= 0"
         assert (
-            isinstance(self.DateTime, str) or self.DateTime is None
-        ), "DateTime must be str or None"
+            isinstance(self.created_at, str) or self.created_at is None
+        ), "created_at must be str or None"
         assert (
             isinstance(self.acq_tol, (float, int)) and self.acq_tol >= 0
         ), "acq_tol must be a positive float or integer"
@@ -161,8 +161,8 @@ class BOConfig:
         ), "obj_tol must be a positive float or integer"
 
         # --- derived / normalized values ---
-        if self.DateTime is None:
-            self.DateTime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if self.created_at is None:
+            self.created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if isinstance(self.cs_name, Enum):
             self.cs_name = self.cs_name.name
         else:

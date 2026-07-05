@@ -119,7 +119,7 @@ def build_fixture(method_val=7):
     sim = make_case_study_simulator(problem, 0, None, 1)
     exp = sim.generate_experimental_data(5, GenMethod(2), None, 0.01)
     ep = ExplorationBias(1, None, EpSchedule(1), None, None, None, None, None, None, None)
-    simd = sim.generate_simulation_data(20, 5, GenMethod(1), GenMethod(2), 1.0, 1, False, None, w_noise=False)
+    simd = sim.generate_simulation_data(20, 5, GenMethod(1), GenMethod(2), 1.0, 1, False, None, with_noise=False)
     ssed = sim.to_sse_data(method, simd, exp, 1.0, False)
     csp = BOConfig(problem.name, 1, 1.0, True, Kernel(1), None, None,
                               3, 3, False, 3, 1, False, None, 1, 1e-7, 1e-7, True, False)
@@ -133,16 +133,16 @@ def build_fixture(method_val=7):
         pickle.dump(res_gp, f)
     # Statepoint keys the per-run analysis methods read. bo_runs_in_job / bo_iter_tot mirror the
     # fixture's bo_run_tot=1 and bo_iter_tot=3 above; parameter_trajectories/hyperparameter_trajectories need them to
-    # size their (runs x iters x dim) arrays. w_noise is read by the objective-analysis path.
+    # size their (runs x iters x dim) arrays. with_noise is read by the objective-analysis path.
     sp = {"cs_name_val": 1, "meth_name_val": method_val, "ep_enum_val": 1, "bo_run_num": 1,
           "bo_run_tot": 1, "kernel_enum_val": 1, "gen_meth_theta": 1,
-          "bo_runs_in_job": 1, "bo_iter_tot": 3, "w_noise": False,
+          "bo_runs_in_job": 1, "bo_iter_tot": 3, "with_noise": False,
           # Full set of keys read by __rebuild_cs (gp_heat_map_data). These mirror the fixture's
           # BOConfig exactly, so the rebuilt config reproduces the saved run. (Adding them makes the
           # statepoint match the fixture; it also shifts the parameter_/hyperparameter_trajectories
           # fingerprints, which previously ran against a statepoint missing these keys.)
           "ep0": 1, "sep_fact": 1.0, "normalize": True, "lenscl": None, "outputscl": None,
-          "retrain_GP": 3, "reoptimize_obj": 3, "gen_heat_map_data": False,
+          "retrain_gp": 3, "reoptimize_obj": 3, "gen_heat_map_data": False,
           "seed": 1, "obj_tol": 1e-7, "ei_tol": 1e-7}
     with open(os.path.join(ws, "signac_statepoint.json"), "w") as f:
         json.dump(sp, f)

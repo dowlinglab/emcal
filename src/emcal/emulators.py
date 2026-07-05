@@ -45,7 +45,7 @@ class GPEmulator:
         lenscl,
         noise_std,
         outputscl,
-        retrain_GP,
+        retrain_gp,
         set_seed,
         normalize,
         backend=None,
@@ -67,7 +67,7 @@ class GPEmulator:
             The standard deviation of the noise
         outputscl: float or None
             Determines value of outputscale
-        retrain_GP: int
+        retrain_gp: int
             Number of times to (re)do GP training. If 0, no training is done and default/initial values are used
         set_seed: int or None
             Random seed
@@ -117,8 +117,8 @@ class GPEmulator:
 
         assert isinstance(normalize, bool), "normalize must be bool"
         assert (
-            isinstance(retrain_GP, int) == True and retrain_GP >= 0
-        ), "retrain_GP must be int greater than or equal to 0"
+            isinstance(retrain_gp, int) == True and retrain_gp >= 0
+        ), "retrain_gp must be int greater than or equal to 0"
         # Check for Enum
         assert isinstance(kernel, Enum) == True, "kernel must be type Enum"
         # Check for instance of Data class or None
@@ -137,7 +137,7 @@ class GPEmulator:
         self.lenscl = lenscl
         self.noise_std = noise_std
         self.outputscl = outputscl
-        self.retrain_GP = retrain_GP
+        self.retrain_gp = retrain_gp
         self.seed = set_seed
         self.normalize = normalize
         # If normalize, create the scalers
@@ -574,12 +574,12 @@ class GPEmulator:
         best_model = None
 
         # If we are not retraining the GP, set the model once with default/set hyperparameters
-        if self.retrain_GP == 0:
+        if self.retrain_gp == 0:
             best_model = self.set_gp_model(0)
         # Otherwise train the model and keep the best model over all retrains
         else:
             # While you still have retrains left
-            for i in range(self.retrain_GP):
+            for i in range(self.retrain_gp):
                 # Create and fit the model
                 gp_model = self.set_gp_model(i)
                 # Train hyperparameters via the GP backend. compile=False (eager) is used for
@@ -1090,7 +1090,7 @@ class ObjectiveGP(GPEmulator):
         lenscl,
         noise_std,
         outputscl,
-        retrain_GP,
+        retrain_gp,
         set_seed,
         normalize,
         backend=None,
@@ -1116,7 +1116,7 @@ class ObjectiveGP(GPEmulator):
             The standard deviation of the noise
         outputscl: float or None
             Determines value of outputscale - None if hyperparameters will be updated during training
-        retrain_GP: int
+        retrain_gp: int
             Number of times to (re)train the GP. If 0, the GP is not trained and default/initial hyperparameters are used
         set_seed: int or None
             Random seed
@@ -1140,7 +1140,7 @@ class ObjectiveGP(GPEmulator):
             lenscl,
             noise_std,
             outputscl,
-            retrain_GP,
+            retrain_gp,
             set_seed,
             normalize,
             backend=backend,
@@ -1317,7 +1317,7 @@ class EmulatorGP(GPEmulator):
         lenscl,
         noise_std,
         outputscl,
-        retrain_GP,
+        retrain_gp,
         set_seed,
         normalize,
         backend=None,
@@ -1343,7 +1343,7 @@ class EmulatorGP(GPEmulator):
             The standard deviation of the noise
         outputscl: float or None
             Determines value of outputscale - None if hyperparameters will be updated during training
-        retrain_GP: int
+        retrain_gp: int
             Number of times to (re)train the GP. If 0, the GP is not trained and default/initial hyperparameters are used
         set_seed: int or None
             Random seed
@@ -1367,7 +1367,7 @@ class EmulatorGP(GPEmulator):
             lenscl,
             noise_std,
             outputscl,
-            retrain_GP,
+            retrain_gp,
             set_seed,
             normalize,
             backend=backend,
@@ -1691,7 +1691,7 @@ def build_gp_emulator(
     kernel,
     lenscl,
     outputscl,
-    retrain_GP,
+    retrain_gp,
     seed,
     normalize,
     simulator_noise_std,
@@ -1713,7 +1713,7 @@ def build_gp_emulator(
         ObjectiveGP uses sim_sse_data.
     val_data, val_sse_data : Data or None
         Optional validation data (same two forms).
-    kernel, lenscl, outputscl, retrain_GP, seed, normalize :
+    kernel, lenscl, outputscl, retrain_gp, seed, normalize :
         GP hyperparameter / training configuration (from BOConfig).
     simulator_noise_std : float or None
         The simulator's noise standard deviation.
@@ -1740,7 +1740,7 @@ def build_gp_emulator(
             noise_std = None
         gp_emulator = ObjectiveGP(
             all_gp_data, all_val_data, None, None, None, kernel, lenscl, noise_std,
-            outputscl, retrain_GP, seed, normalize,
+            outputscl, retrain_gp, seed, normalize,
             backend=backend,
         )
     else:
@@ -1749,7 +1749,7 @@ def build_gp_emulator(
         noise_std = simulator_noise_std  # Yexp_std is exactly the noise_std of the GP Kernel
         gp_emulator = EmulatorGP(
             all_gp_data, all_val_data, None, None, None, kernel, lenscl, noise_std,
-            outputscl, retrain_GP, seed, normalize,
+            outputscl, retrain_gp, seed, normalize,
             backend=backend,
         )
     return gp_emulator

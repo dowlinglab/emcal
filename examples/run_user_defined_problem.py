@@ -52,7 +52,7 @@ def main():
     exp_data = simulator.generate_experimental_data(6, GenMethod(2), None, 0.01)
     n_params = len(simulator.indices_to_consider)
     sim_data = simulator.generate_simulation_data(
-        10 * n_params, 6, GenMethod(1), GenMethod(2), 1.0, 1, False, None, w_noise=False
+        10 * n_params, 6, GenMethod(1), GenMethod(2), 1.0, 1, False, None, with_noise=False
     )
     sim_sse_data = simulator.to_sse_data(method, sim_data, exp_data, 1.0, False)
 

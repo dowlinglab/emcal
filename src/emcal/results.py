@@ -62,7 +62,7 @@ def build_iteration_row(
         The (possibly log-scaled) GP-predicted objective value at min_sse_theta_vals
     min_sse_sim: float or None
         The (possibly log-scaled) simulated/actual objective value at min_sse_theta_vals,
-        or None if not generated (cs_params.get_y_sse is False)
+        or None if not generated (cs_params.compute_y_sse is False)
     time_per_iter: float
         Wall-clock seconds spent on this iteration
     log_scaled: bool

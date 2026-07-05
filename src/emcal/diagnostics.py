@@ -268,7 +268,7 @@ def fit_gp(
     """
     emulator = build_gp_emulator(
         method, sim_data, sim_sse_data, val_data, val_sse_data,
-        config.kernel, config.lenscl, config.outputscl, config.retrain_GP,
+        config.kernel, config.lenscl, config.outputscl, config.retrain_gp,
         config.seed, config.normalize, simulator.noise_std, exp_data.n_x,
     )
     # The split is driven by the source data's sep_fact; set it so a test set exists even

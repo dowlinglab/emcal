@@ -944,13 +944,13 @@ class General_Analysis:
         kernel = Kernel(sp_data["kernel_enum_val"])
         lenscl = sp_data["lenscl"]
         outputscl = sp_data["outputscl"]
-        retrain_GP = sp_data["retrain_GP"]
+        retrain_gp = sp_data["retrain_gp"]
         reoptimize_obj = sp_data["reoptimize_obj"]
         gen_heat_map_data = sp_data["gen_heat_map_data"]
         bo_iter_tot = sp_data["bo_iter_tot"]
         bo_run_tot = sp_data["bo_run_tot"]
         save_data = False
-        DateTime = None
+        created_at = None
         seed = sp_data["seed"]
         obj_tol = sp_data["obj_tol"]
         ei_tol = sp_data["ei_tol"]
@@ -965,13 +965,13 @@ class General_Analysis:
             kernel,
             lenscl,
             outputscl,
-            retrain_GP,
+            retrain_gp,
             reoptimize_obj,
             gen_heat_map_data,
             bo_iter_tot,
             bo_run_tot,
             save_data,
-            DateTime,
+            created_at,
             seed,
             obj_tol,
             ei_tol,

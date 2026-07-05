@@ -107,7 +107,7 @@ def run_case_study(cs_num, method_val=4, iters=10, runs=1, seed=1,
     exp_data = simulator.generate_experimental_data(meta["num_x"], gen_meth_x, x_vals, 0.01)
     num_theta = len(simulator.indices_to_consider) * 10
     sim_data = simulator.generate_simulation_data(
-        num_theta, meta["num_x"], gen_meth_theta, gen_meth_x, 1.0, 1, False, x_vals, w_noise=False
+        num_theta, meta["num_x"], gen_meth_theta, gen_meth_x, 1.0, 1, False, x_vals, with_noise=False
     )
     sim_sse_data = simulator.to_sse_data(method, sim_data, exp_data, 1.0, False)
 

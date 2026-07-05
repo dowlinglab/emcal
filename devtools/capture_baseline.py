@@ -71,7 +71,7 @@ def run_one(cs_val, meth_val, iters, runs):
     num_theta_data = len(simulator.indices_to_consider) * NUM_THETA_MULT
     sim_data = simulator.generate_simulation_data(
         num_theta_data, num_x_data, gen_meth_theta, gen_meth_x,
-        SEP_FACT, SIM_SEED, False, x_vals, w_noise=GEN_Y_W_NOISE,
+        SEP_FACT, SIM_SEED, False, x_vals, with_noise=GEN_Y_W_NOISE,
     )
     sim_sse_data = simulator.to_sse_data(method, sim_data, exp_data, SEP_FACT, False)
 

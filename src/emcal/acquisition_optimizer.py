@@ -87,7 +87,7 @@ class AcquisitionOptimizer:
     __init__
     get_best_error()
     make_starting_points(best_error_metrics, rng_seed)
-    optimize(opt_obj, rng, get_y=False, w_noise=False)
+    optimize(opt_obj, rng, get_y=False, with_noise=False)
     """
 
     def __init__(self, cs_params, method, simulator, exp_data, ep_bias, sse_penalty,
@@ -110,7 +110,7 @@ class AcquisitionOptimizer:
         sg_mc_samples: int
             Number of samples to use for the Tasmanian sparse grid or Monte Carlo approaches
         create_data_fn: callable
-            Callable with signature (theta_array, get_y=..., w_noise=...) -> Data, used to
+            Callable with signature (theta_array, get_y=..., with_noise=...) -> Data, used to
             build Data instances from a winning theta (e.g.
             GPBODriver.create_data_instance_from_theta)
         """
@@ -236,7 +236,7 @@ class AcquisitionOptimizer:
         # Sets the points in order based on the indices
         all_pts = theta_vals[min_indices]
 
-        # Choose top retrain_GP points as starting points
+        # Choose top retrain_gp points as starting points
         starting_pts = all_pts[: self.cs_params.reoptimize_obj + 1]
 
         return starting_pts
@@ -250,14 +250,14 @@ class AcquisitionOptimizer:
         starting_pts: np.ndarray
             Array of parameter set initializations for self.optimize
         """
-        # Create starting points equal to number of retrain_GP
+        # Create starting points equal to number of retrain_gp
         starting_pts = self.simulator.generate_parameter_samples(
             self.cs_params.reoptimize_obj + 1, rng_seed
         )
 
         return starting_pts
 
-    def optimize(self, opt_obj, rng, get_y=False, w_noise=False):
+    def optimize(self, opt_obj, rng, get_y=False, with_noise=False):
         """
         Optimizes a function with scipy.optimize
 
@@ -270,7 +270,7 @@ class AcquisitionOptimizer:
             explicitly rather than stored on this class (see module docstring, risk #2).
         get_y: bool, default False
             Whether to return the y values of the optimized theta
-        w_noise: bool, default False
+        with_noise: bool, default False
             Whether to return the y values with noise
 
         Returns
@@ -339,7 +339,7 @@ class AcquisitionOptimizer:
         best_prediction = self.min_obj_prediction
 
         best_class_simple = self.create_data_fn(
-            self.min_obj_class.theta_vals[0], get_y=get_y, w_noise=w_noise
+            self.min_obj_class.theta_vals[0], get_y=get_y, with_noise=with_noise
         )
         if get_y:
             best_class.y_vals = best_class_simple.y_vals

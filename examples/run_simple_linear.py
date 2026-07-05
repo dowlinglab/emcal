@@ -44,7 +44,7 @@ def main():
     #     (10 x n_params points), grid over state points.
     n_params = len(simulator.indices_to_consider)
     sim_data = simulator.generate_simulation_data(
-        10 * n_params, 5, GenMethod(1), GenMethod(2), 1.0, 1, False, None, w_noise=False
+        10 * n_params, 5, GenMethod(1), GenMethod(2), 1.0, 1, False, None, with_noise=False
     )
     # Convert to the SSE representation the method expects.
     sim_sse_data = simulator.to_sse_data(method, sim_data, exp_data, 1.0, False)
@@ -53,9 +53,9 @@ def main():
     ep_bias = ExplorationBias(1, None, EpSchedule(1), None, None, None, None, None, None, None)
 
     # --- 5. Case study / BO parameters. Positional args (see BOConfig):
-    #     name, ep0, sep_fact, normalize, kernel, lenscl, outputscl, retrain_GP,
-    #     reoptimize_obj, gen_heat_map_data, bo_iter_tot, bo_run_tot, save_data, DateTime,
-    #     set_seed, obj_tol, acq_tol, get_y_sse, w_noise.
+    #     name, ep0, sep_fact, normalize, kernel, lenscl, outputscl, retrain_gp,
+    #     reoptimize_obj, gen_heat_map_data, bo_iter_tot, bo_run_tot, save_data, created_at,
+    #     set_seed, obj_tol, acq_tol, compute_y_sse, with_noise.
     #     (retrain/reopt reduced to 10 so this runs in ~1-2 min; the paper used 25.)
     cs_params = BOConfig(
         problem.name, 1, 1.0, True, Kernel(1), None, None,

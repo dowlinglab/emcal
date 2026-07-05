@@ -68,7 +68,7 @@ def build_and_run(cs_val, meth_val, iters, runs, retrain_gp=25, reopt_obj=25):
     exp = sim.generate_experimental_data(nx, gmx, xv, 0.01)
     ep = ExplorationBias(1, None, ep_enum, None, None, None, None, None, None, None)
     nth = len(sim.indices_to_consider) * 10
-    simd = sim.generate_simulation_data(nth, nx, gmt, gmx, 1.0, SIM_SEED, False, xv, w_noise=False)
+    simd = sim.generate_simulation_data(nth, nx, gmt, gmx, 1.0, SIM_SEED, False, xv, with_noise=False)
     ssed = sim.to_sse_data(method, simd, exp, 1.0, False)
     name = problem.name
     csp = BOConfig(name, 1, 1.0, True, kernel, None, None, retrain_gp, reopt_obj,
@@ -117,7 +117,7 @@ def main():
     p.add_argument("--cs", type=str, default=",".join(map(str, ALL_CS)))
     p.add_argument("--iters", type=int, default=3)
     p.add_argument("--runs", type=int, default=1)
-    p.add_argument("--retrain", type=int, default=25, help="retrain_GP per iteration")
+    p.add_argument("--retrain", type=int, default=25, help="retrain_gp per iteration")
     p.add_argument("--reopt", type=int, default=25, help="reoptimize_obj per iteration")
     p.add_argument("--patch", choices=["none","nocompile","determinism"], default="nocompile")
     p.add_argument("--retries", type=int, default=3)
