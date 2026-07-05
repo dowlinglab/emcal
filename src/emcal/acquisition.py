@@ -317,8 +317,12 @@ class ExpectedImprovement:
             gp_mean_i = self.gp_mean[i * n : (i + 1) * n]
             gp_var_i = self.gp_var[i * n : (i + 1) * n]
 
-            # Calculate ei for a given theta (ei for all x over each theta)
-
+            # Calculate ei for a given theta (ei for all x over each theta). The EI
+            # integral over the SSE objective has no closed form for an emulator (Type-2)
+            # GP in general, so each method here is a different way of evaluating/
+            # approximating it: 2A/2B assume independence across x (closed-form, in
+            # normal/log-normal space respectively), 2C uses a sparse-grid quadrature, and
+            # 2D falls back to Monte-Carlo sampling when neither approximation applies.
             if self.method.method_name.value == 3:  # 2A
                 # Calculate ei for a given theta (ei for all x over each theta)
                 ei[i], row_data = self.__calc_ei_emulator(
@@ -359,7 +363,7 @@ class ExpectedImprovement:
         ----------
         gp_mean: np.ndarray
             Model mean at state points (x) for a given parameter set
-        gp_variance: np.ndarray
+        gp_var: np.ndarray
             Model variance at state points (x) for a given parameter set
         y_target: np.ndarray
             The expected value of the function from data or other source
@@ -504,7 +508,7 @@ class ExpectedImprovement:
         ----------
         gp_mean: np.ndarray
             Model mean at state points (x) for a given parameter set
-        gp_variance: np.ndarray
+        gp_var: np.ndarray
             Model variance at state points (x) for a given parameter set
         y_target: np.ndarray
             The expected value of the function from data or other source
@@ -778,7 +782,7 @@ class ExpectedImprovement:
 
         Parameters
         ----------
-        gp_variance: np.ndarray
+        gp_var: np.ndarray
             Model variance at state points x for a given parameter set
         y_target: np.ndarray
             The expected value of the function from data or other source

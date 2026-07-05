@@ -1509,11 +1509,17 @@ class EmulatorGP(GPEmulator):
         # Reshape y_sim into n_theta rows x n_x columns
         indices = np.arange(0, len_theta, len_x)
         n_blocks = len(indices)
-        # Slice y_sim into blocks of size len_x and calculate squared errors for each block
+        # gp_mean is flat, one entry per (theta, x) row (EmulatorGP repeats each theta
+        # len_x times); blockwise_sse reshapes it into n_blocks (one per unique theta)
+        # rows of len_x columns, so each block's residual-vs-exp_data.y_vals and
+        # summed-squared-error can be computed per theta in one vectorized call.
         sse_mean, block_errors = blockwise_sse(gp_mean, exp_data.y_vals, n_blocks, len_x)
         residuals = block_errors.reshape(gp_covar.shape[0], -1)
 
-        # Calculate the sse variance. This SSE_variance CAN'T be negative
+        # Propagate gp_covar (over the flat (theta,x) rows) into SSE variance via the
+        # quadratic-form identity for sums of squared correlated Gaussians:
+        # Var(sum r_i^2) = 2*tr(Sigma^2) + 4*r^T*Sigma*r, r = residuals, Sigma = gp_covar.
+        # This SSE_variance CAN'T be negative
         sse_var_all = (
             2 * np.trace(gp_covar**2) + 4 * residuals.T @ gp_covar @ residuals
         )
@@ -1598,7 +1604,9 @@ class EmulatorGP(GPEmulator):
         # #Reshape y_sim into n_theta rows x n_x columns
         indices = np.arange(0, len_theta, len_x)
         n_blocks = len(indices)
-        # Slice y_sim into blocks of size len_x and calculate squared errors for each block
+        # train_data.y_vals is flat (one entry per (theta, x) training row); reshape into
+        # one row per unique training theta so the SSE-vs-exp_data can be computed (and
+        # then argmin'd over) per theta rather than per individual (theta, x) row.
         sse_train_vals, block_errors = blockwise_sse(
             self.train_data.y_vals, exp_data.y_vals, n_blocks, len_x
         )

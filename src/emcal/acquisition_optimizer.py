@@ -285,6 +285,9 @@ class AcquisitionOptimizer:
         AssertionError
             If any of the required parameters are missing or not of the correct type or value
         """
+        # These three track the best candidate seen so far across the scipy restarts
+        # below, always updated together (see _objective) -- reset per call since a new
+        # call means a new opt_obj/best_error_metrics, so any prior winner is stale.
         self.min_obj_class = None
         self.min_obj_val = None
         self.min_obj_prediction = None
@@ -444,10 +447,21 @@ class AcquisitionOptimizer:
                     )
                 obj = -1 * ei_output[0]
 
+            # min_obj_val is the value reported back to callers, which must be the raw
+            # (unnegated) EI for neg_ei -- `obj` itself is the sign-flipped value scipy is
+            # minimizing, not a usable EI. For sse/E_sse, `obj` IS the reported value, so
+            # min_obj_val is set from `obj` directly at the bottom of this loop instead.
             cand_acq_val = ei_output[0] if opt_obj == "neg_ei" else None
 
             set_acq_val = True
 
+            # Track the best candidate seen across all restarts (lower `obj` always wins,
+            # whether `obj` is sse/E_sse directly or the negated EI). Exact ties are
+            # broken differently by objective: plain "sse" breaks ties with a random draw
+            # (sse is deterministic given theta, so a tie means truly equivalent
+            # candidates); "E_sse"/"neg_ei" ties instead prefer whichever candidate sits
+            # farther from the existing training data, biasing acquisition toward
+            # exploration when the acquisition surface is flat.
             # Save candidate class if there is no current value
             if self.min_obj_class == None:
                 self.min_obj_class = self.gp_emulator.cand_data
