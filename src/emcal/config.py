@@ -88,6 +88,14 @@ class BOConfig:
     w_noise: bool = False
 
     def __post_init__(self):
+        """
+        Validates field types/ranges immediately after dataclass construction.
+
+        Raises
+        ------
+        AssertionError
+            If any field is not of the correct type or value
+        """
         # --- type / range validation (fail fast with clear messages) ---
         if not isinstance(self.cs_name, str):
             warnings.warn(

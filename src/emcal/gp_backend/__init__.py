@@ -10,7 +10,24 @@ _BACKENDS = ("gpflow",)
 
 
 def get_backend(name="gpflow"):
-    """Return a GPBackend instance for `name` (default 'gpflow')."""
+    """
+    Return a GPBackend instance for `name` (default 'gpflow').
+
+    Parameters
+    ----------
+    name: str or None, default "gpflow"
+        Backend identifier; None is treated as "gpflow"
+
+    Returns
+    -------
+    backend: GPBackend
+        A new instance of the requested backend
+
+    Raises
+    ------
+    ValueError
+        If name does not match a registered backend
+    """
     key = (name or "gpflow").lower()
     if key == "gpflow":
         from .gpflow_backend import GpflowBackend

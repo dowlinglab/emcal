@@ -146,6 +146,11 @@ class BOResults:
             String detailing the reason for algorithm termination
         heat_map_data_dict: dict
             Heat map data for each set of 2 parameters indexed by parameter names "param_1-param_2"
+
+        Raises
+        ------
+        AssertionError
+            If any of the inputs are not of the correct type or value
         """
         assert isinstance(configuration, dict) or configuration is None, "configuration must be a dictionary or None"
         assert isinstance(simulator_class, Simulator) or simulator_class is None, "simulator_class must be an instance of Simulator or None"

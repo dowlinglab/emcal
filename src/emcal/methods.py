@@ -27,6 +27,11 @@ class GPBOMethod:
         Parameters
         ----------
         method_name: MethodName Class instance, The name associated with the method being tested. Enum type
+
+        Raises
+        ------
+        AssertionError
+            If method_name is not an instance of MethodName
         """
         assert isinstance(
             method_name, MethodName
@@ -40,7 +45,13 @@ class GPBOMethod:
 
     @property
     def is_emulator(self):
-        """Whether the GP emulates the model output directly (Type-2 methods)."""
+        """
+        Whether the GP emulates the model output directly (Type-2 methods).
+
+        Returns
+        -------
+        bool
+        """
         # The conventional methods fit the GP to the SSE objective; all others emulate.
         return self.method_name not in (
             MethodName.CONVENTIONAL,
@@ -49,7 +60,13 @@ class GPBOMethod:
 
     @property
     def report_name(self):
-        """The manuscript's shorthand name for this method."""
+        """
+        The manuscript's shorthand name for this method.
+
+        Returns
+        -------
+        str
+        """
         report_names = {
             MethodName.CONVENTIONAL: "Conventional",
             MethodName.LOG_CONVENTIONAL: "Log Conventional",
@@ -63,10 +80,22 @@ class GPBOMethod:
 
     @property
     def uses_sparse_grid(self):
-        """Whether EI is evaluated with a sparse-grid integral (SPARSE_GRID / C2)."""
+        """
+        Whether EI is evaluated with a sparse-grid integral (SPARSE_GRID / C2).
+
+        Returns
+        -------
+        bool
+        """
         return self.method_name == MethodName.SPARSE_GRID
 
     @property
     def uses_monte_carlo(self):
-        """Whether EI is evaluated with a Monte-Carlo integral (MONTE_CARLO / D2)."""
+        """
+        Whether EI is evaluated with a Monte-Carlo integral (MONTE_CARLO / D2).
+
+        Returns
+        -------
+        bool
+        """
         return self.method_name == MethodName.MONTE_CARLO

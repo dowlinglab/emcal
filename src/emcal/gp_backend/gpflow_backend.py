@@ -13,13 +13,19 @@ from .base import GPBackend
 
 
 class GpflowBackend(GPBackend):
+    """gpflow implementation of GPBackend; see module docstring for the design rationale."""
+
     name = "gpflow"
 
     def configure(self):
+        """See GPBackend.configure. Registers TF's default graph and sets gpflow's
+        default float precision to float64."""
         tf.compat.v1.get_default_graph()
         gpflow.config.set_default_float(np.float64)
 
     def make_bounded_parameter(self, low, high, initial_value):
+        """See GPBackend.make_bounded_parameter. Enforces (low, high) via a gpflow
+        Parameter with a Sigmoid transform."""
         sigmoid = tfb.Sigmoid(
             low=tf.cast(low, dtype=tf.float64), high=tf.cast(high, dtype=tf.float64)
         )
@@ -27,6 +33,9 @@ class GpflowBackend(GPBackend):
 
     def build_model(self, data, kernel_value, lenscls, tau, white_var,
                     fix_lengthscale, fix_outputscale, noise_variance=1e-5):
+        """See GPBackend.build_model. kernel_value selects the base kernel
+        (3=SquaredExponential, 2=Matern32, else Matern52); a White noise kernel is
+        always added on top."""
         if kernel_value == 3:
             gpKernel = gpflow.kernels.SquaredExponential(
                 variance=tau, lengthscales=lenscls
@@ -49,6 +58,7 @@ class GpflowBackend(GPBackend):
         return gp_model
 
     def train(self, model):
+        """See GPBackend.train."""
         # Build optimizer
         optimizer = gpflow.optimizers.Scipy()
         # Fit GP to training data.
@@ -70,15 +80,18 @@ class GpflowBackend(GPBackend):
         return bool(aux.success), training_loss
 
     def get_hyperparameters(self, model):
+        """See GPBackend.get_hyperparameters."""
         outputscl_final = float(model.kernel.kernels[0].variance.numpy())
         lenscl_final = model.kernel.kernels[0].lengthscales.numpy()
         noise_final = float(model.kernel.kernels[1].variance.numpy())
         return [lenscl_final, noise_final, outputscl_final]
 
     def make_posterior(self, model):
+        """See GPBackend.make_posterior."""
         return model.posterior()
 
     def predict_f(self, posterior, eval_points, full_cov=True):
+        """See GPBackend.predict_f."""
         eval_points_tf = tf.convert_to_tensor(eval_points)
         gp_mean_scl, gp_covar_scl = posterior.predict_f(eval_points_tf, full_cov=full_cov)
         gp_mean_scl = gp_mean_scl.numpy()
