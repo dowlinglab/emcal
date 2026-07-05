@@ -21,25 +21,29 @@ from .acquisition_optimizer import AcquisitionOptimizer
 
 class GPBODriver:
     """
-    The base class for running the GPBO Workflow
+    The base class for running the GPBO Workflow. Delegates acquisition/SSE scipy
+    optimization to the collaborator `self.acq_optimizer` (AcquisitionOptimizer); the
+    thin wrappers below (__get_best_error, __make_starting_opt_pts, __opt_with_scipy,
+    __scipy_fxn) exist only to preserve existing call-site signatures.
 
     Methods
     --------------
     __init__
+    gp_emulator (property): re-syncs self.acq_optimizer.gp_emulator on every assignment
     __gen_emulator()
     __get_best_error()
-    __make_starting_opt_pts(best_error_metrics)
-    __gen_start_pts_mc_sparse(best_error_metrics)
-    __gen_start_pts_not_mc_sparse()
-    __opt_with_scipy(opt_obj)
-    __scipy_fxn(theta, opt_obj, best_error_metrics, beta)
+    __make_starting_opt_pts(best_error_metrics, rng_seed)
+    __opt_with_scipy(opt_obj, get_y, w_noise)
+    __scipy_fxn(theta, opt_obj, best_error_metrics)
     create_heat_map_param_data(n_points_set)
     __augment_train_data(theta_best_data)
     create_data_instance_from_theta(theta_array)
-    __run_bo_iter(gp_model, iteration)
-    __run_bo_to_term(gp_model)
-    __run_bo_workflow()
-    run()
+    __run_bo_iter(iteration)
+    __run_bo_to_term(run_num, job)
+    __run_bo_workflow(run_num, job)
+    reset_rng()
+    run(job)
+    save_results_run(job)
     """
 
     # Class variables and attributes
@@ -760,7 +764,15 @@ class GPBODriver:
                 else:
                     obj_counter = 0
 
-                # set flag if opt acq. func val is less than the tolerance 3 times in a row
+                # Two independent early-stop signals (both require i>=4 so a handful of
+                # iterations always run first, since acq_value/obj_counter are noisy early
+                # on): acq_flag fires if the best acquisition value has stayed below
+                # tolerance for 3 STRAIGHT iterations (the model sees nothing left worth
+                # exploring); obj_flag fires if obj_counter (the consecutive-iteration
+                # stagnation streak built up above) has run for bo_iter_term_frac (1/3) of
+                # the total budget (sustained lack of SSE progress, not just one flat
+                # iteration). set flag if opt acq. func val is less than the tolerance 3
+                # times in a row
                 if (
                     all(results_df["acq_value"].tail(3) < self.cs_params.acq_tol)
                     and i >= 4
@@ -776,6 +788,12 @@ class GPBODriver:
 
                 flags = [acq_flag, obj_flag]
 
+                # Terminate on whichever fires first: (1) the iteration budget is
+                # exhausted (guarantees the loop always ends); (2) both acq_flag and
+                # obj_flag agree (a corroborated early stop, so a single noisy signal
+                # can't cut a run short); or (3) obj_counter alone has stagnated for half
+                # the budget on long-enough runs (bo_iter_tot>=5) -- a stricter,
+                # single-criterion fallback that doesn't need acq_flag's corroboration.
                 # Terminate if you meet 2 stopping criteria, hit the budget, or obj has not improved after 1/2 of iterations
                 if i == self.cs_params.bo_iter_tot - 1:
                     terminate = True

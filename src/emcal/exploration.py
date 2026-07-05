@@ -46,7 +46,7 @@ class ExplorationBias:
             The number of the current BO iteration
         bo_iter_max: int
             The maximum number of BO iterations
-        e_inc: float
+        ep_inc: float
             The increment for the Boyle's method for calculating exploration parameter: Recommendation is 1.5
         ep_f: float
             The final exploration parameter value: Recommendation is 0
@@ -268,6 +268,9 @@ class ExplorationBias:
         if self.best_error > 0:
             ep = 1 + (self.mean_of_var / self.best_error**2)
         else:
+            # best_error <= 0 would make best_error**2 divide-by-near-zero (or, if
+            # negative, an underflow-prone ratio) explode; fall back to maximal exploration
+            # instead of risking inf/nan.
             ep = self.ep_max
 
         # Ensure that ep stays within the bounds

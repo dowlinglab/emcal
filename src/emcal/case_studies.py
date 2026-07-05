@@ -515,8 +515,7 @@ class CSMuller:
         self.calc_y_fxn_args = {"min muller": self.__solve_pyomo_Muller_min()}
 
     def __set_param_str(self):
-        """
-        Sets the param_name_str based on the cs_number"""
+        """Sets the param_name_str based on the cs_number."""
         if self.cs_number == 2:
             param_name_str = "x0"
         elif self.cs_number == 3:
@@ -524,8 +523,7 @@ class CSMuller:
         self.param_name_str = param_name_str
 
     def __set_idcs_to_consider(self):
-        """
-        Sets the idcs_to_consider based on the param_name_str"""
+        """Sets the idcs_to_consider based on the param_name_str."""
         # Set param_name_str
         indecies_to_consider = []
         all_param_idx = [
@@ -1129,10 +1127,14 @@ def uniquac_model(unknown_params, xP, args):
         - "T": float, temperature
         - "z": float, coordination number (default 10)
         - "A", "B", "C": Antoine equation parameters for vapor pressure
+        - "mode": str, one of "P" (vapor pressure), "gamma" (activity coefficient of
+          component 1), or "y" (vapor mole fraction of component 1) -- selects what is
+          returned
 
     Returns:
     np.array or float
-        Vapor pressure P.
+        Vapor pressure P, activity coefficient gamma1, or vapor mole fraction y1,
+        depending on args["mode"] ("P", "gamma", or "y" respectively).
     """
     # Extract parameters
     r = np.array(args["r"])
@@ -1143,8 +1145,8 @@ def uniquac_model(unknown_params, xP, args):
     A, B, C = np.array(args["A"]), np.array(args["B"]), np.array(args["C"])
     mode = args["mode"]
     
-    # Precompute constants
-    l = (z / 2) * (r - q) - (r - 1)
+    # Precompute constants (l_param is the UNIQUAC "l_i" parameter, l_i = (z/2)(r_i-q_i)-(r_i-1))
+    l_param = (z / 2) * (r - q) - (r - 1)
     tau = np.exp(-unknown_params / (R * T))
     psat = 10 ** (A - B / (C + (T - 273.15)))
 
@@ -1170,7 +1172,7 @@ def uniquac_model(unknown_params, xP, args):
         psi = (valid_x * r) / sum_xr[:, None]
 
         lngC = (
-            np.log(psi / valid_x) + (z / 2) * q * np.log(theta / psi) + psi[:, ::-1] * (l - r * l[::-1] / r[::-1])
+            np.log(psi / valid_x) + (z / 2) * q * np.log(theta / psi) + psi[:, ::-1] * (l_param - r * l_param[::-1] / r[::-1])
         )
 
         lngR = (
@@ -1192,13 +1194,13 @@ def uniquac_model(unknown_params, xP, args):
         term1 = np.log(r[0]/r[1])
         term2a = 5*np.log((q[0]*r[1])/(q[1]*r[0])) - np.log(tau[1]) + 1 -tau[0]
         term2 = q[0]*term2a
-        term3 = l[0]-(r[0]/r[1])*l[1]
+        term3 = l_param[0]-(r[0]/r[1])*l_param[1]
         gamma_inf[0] = np.exp(term1 + term2 + term3)
 
         term1_x2 = np.log(r[1]/r[0])
         term2a_x2 = 5*np.log((q[1]*r[0])/(q[0]*r[1])) - np.log(tau[0]) + 1 -tau[1]
         term2_x2 = q[1]*term2a_x2
-        term3_x2 = l[1]-(r[1]/r[0])*l[0]
+        term3_x2 = l_param[1]-(r[1]/r[0])*l_param[0]
         gamma_inf[1] = np.exp(term1_x2 + term2_x2 + term3_x2)
 
     gamma1 = gamma[:, 0]

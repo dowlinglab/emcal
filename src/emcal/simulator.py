@@ -151,15 +151,22 @@ class Simulator:
         random_set_seed = random.randint(1, 1e8)
 
         self.rng_rand = np.random.default_rng()
-        
+
+        # If set_seed is given, every RNG below derives deterministically from it (full
+        # run reproducibility); rng_exp reuses rng_set's own stream so experimental-data
+        # generation advances in lockstep with the rest of the class. If set_seed is None,
+        # rng_set/rng_exp are seeded independently (from OS entropy / random_set_seed) so
+        # repeated construction is intentionally non-reproducible.
         if set_seed is not None:
             self.rng_set = np.random.default_rng(set_seed)
             self.rng_exp = self.rng_set
         else:
             self.rng_set = self.rng_rand #np.random.default_rng(random_set_seed)
             self.rng_exp = np.random.default_rng(random_set_seed)
-            
-        #Ensure LHS for sim, val, and starting pts for EI will all be different
+
+        # Ensure LHS for sim, val, and starting pts for EI will all be different: offsetting
+        # by +1/+2 keeps those three data-generation seeds distinct even though they all
+        # derive from the same set_seed.
         if set_seed is not None:
             self.sim_seed = set_seed
             self.sim_x_seed = set_seed
@@ -313,6 +320,11 @@ class Simulator:
             The mean of the noise
         noise_std: float, int, None
             The standard deviation of the noise
+        rng: np.random.Generator
+            Random number generator used to sample the noise
+        noise_std_pct: float or int, default 0.01
+            Percentage of the mean of the y data to use as the standard deviation of the
+            noise when noise_std is None
 
         Returns
         -------
@@ -379,10 +391,8 @@ class Simulator:
         ----------
         num_x_data: int
             Number of experiments
-        gen_meth_x: bool
+        gen_meth_x: GenMethod
             Whether to generate X data with LHS or grid method
-        set_seed: int or None, default None
-            Seed with which t0 generate experimental data. None sets the seed to the class seed
         x_vals: np.ndarray or None, default None
             X values to use for experimental data. If None, x_vals will be generated based on bounds and num_x_data
         noise_std_pct: float or int, default 0.01
@@ -507,9 +517,9 @@ class Simulator:
             Number of parameter sets
         num_x_data: int
             Number of experiments
-        gen_meth_theta: bool
+        gen_meth_theta: GenMethod
             Whether to generate theta data with LHS or grid method
-        gen_meth_x: bool
+        gen_meth_x: GenMethod
             Whether to generate X data with LHS or grid method
         sep_fact: float or int
             The separation factor that decides what percentage of data will be training data. Between 0 and 1.
@@ -548,7 +558,10 @@ class Simulator:
         #Random if rng is not set, otherwise set by seed of simulator
         rng = self.rng_set
 
-        #For 
+        # Pick theta/x seeds by data role: simulation data (gen_val_data=False) seeds both
+        # theta and x from sim_seed; validation data reuses sim_seed for x (so it shares the
+        # same x-grid as the simulation data) but val_seed for theta (so its theta draws are
+        # independent of the simulation data's).
         if gen_val_data == False and self.sim_seed is not None:
             seed_theta = self.sim_seed
             seed_x = self.sim_seed
@@ -636,6 +649,9 @@ class Simulator:
         ----------
         num_theta_data: int
             Number of parameter sets
+        rng_seed: int or None, default None
+            Offset added to self.start_seed to derive the sampling seed. If None,
+            self.start_seed is used directly
 
         Returns
         --------

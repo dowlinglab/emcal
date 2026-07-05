@@ -113,7 +113,7 @@ class Data:
         list_vars = [theta_vals, x_vals, y_vals, gp_mean, gp_var, sse, acq]
         assert all(
             isinstance(var, np.ndarray) or var is None for var in list_vars
-        ), "theta_vals, x_vals, y_vals, gp_mean, gp_var, sse, and ei must be np.ndarray, or None"
+        ), "theta_vals, x_vals, y_vals, gp_mean, gp_var, sse, and acq must be np.ndarray, or None"
         assert (
             isinstance(sep_fact, (float, int)) or sep_fact is None
         ), "Separation factor must be float or int > 0 or None (exp_data)"
@@ -284,6 +284,11 @@ class Data:
     def train_test_idx_split(self, rng_seed = None):
         """
         Splits data indices into training and testing indices
+
+        Parameters
+        ----------
+        rng_seed: int or None, default None
+            Seed for the train/test split RNG. If None, an unseeded default_rng is used
 
         Returns
         --------
