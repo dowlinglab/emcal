@@ -30,9 +30,9 @@ class BOConfig:
         Standardize feature data (sklearn RobustScaler) if True.
     kernel: Kernel, default Kernel(1)
         GP kernel choice.
-    lenscl: float, int, np.ndarray, list, or None, default None
+    lengthscale: float, int, np.ndarray, list, or None, default None
         Lengthscale hyperparameter value; None trains it. Lists are stored as arrays.
-    outputscl: float, int, or None, default None
+    outputscale: float, int, or None, default None
         Outputscale value; None trains it. Must be > 0 if given.
     retrain_gp: int, default 25
         Number of GP (re)training rounds (0 = use initial hyperparameters).
@@ -72,8 +72,8 @@ class BOConfig:
     sep_fact: float = 1.0
     normalize: bool = True
     kernel: "Kernel" = Kernel(1)
-    lenscl: object = None
-    outputscl: object = None
+    lengthscale: object = None
+    outputscale: object = None
     retrain_gp: int = 25
     reoptimize_obj: int = 25
     gen_heat_map_data: bool = False
@@ -117,30 +117,30 @@ class BOConfig:
             isinstance(self.seed, int) and self.seed >= 1
         ), "seed must be int >= 1 or None"
         assert (
-            isinstance(self.outputscl, (float, int)) or self.outputscl is None
-        ), "outputscl must be float, int, or None"
-        if self.outputscl is not None:
-            assert self.outputscl > 0, "outputscl must be > 0 initially if it is not None"
+            isinstance(self.outputscale, (float, int)) or self.outputscale is None
+        ), "outputscale must be float, int, or None"
+        if self.outputscale is not None:
+            assert self.outputscale > 0, "outputscale must be > 0 initially if it is not None"
 
         # Accept a list lengthscale by converting it to an array
-        if isinstance(self.lenscl, list):
-            self.lenscl = np.array(self.lenscl)
+        if isinstance(self.lengthscale, list):
+            self.lengthscale = np.array(self.lengthscale)
 
         assert isinstance(self.compute_y_sse, bool), "compute_y_sse must be bool"
         assert isinstance(self.with_noise, bool), "with_noise must be bool"
         assert (
-            isinstance(self.lenscl, (float, int, np.ndarray)) or self.lenscl is None
-        ), "lenscl must be float, int, np.ndarray, or None"
-        if self.lenscl is not None:
-            if isinstance(self.lenscl, (float, int)):
-                assert self.lenscl > 0, "lenscl must be > 0 initially if lenscl is not None"
+            isinstance(self.lengthscale, (float, int, np.ndarray)) or self.lengthscale is None
+        ), "lengthscale must be float, int, np.ndarray, or None"
+        if self.lengthscale is not None:
+            if isinstance(self.lengthscale, (float, int)):
+                assert self.lengthscale > 0, "lengthscale must be > 0 initially if lengthscale is not None"
             else:
                 assert all(
-                    isinstance(var, (np.int64, np.float64, float, int)) for var in self.lenscl
-                ), "All lenscl elements must float or int"
+                    isinstance(var, (np.int64, np.float64, float, int)) for var in self.lengthscale
+                ), "All lengthscale elements must float or int"
                 assert all(
-                    item > 0 for item in self.lenscl
-                ), "lenscl elements must be > 0 initially if lenscl is not None"
+                    item > 0 for item in self.lengthscale
+                ), "lengthscale elements must be > 0 initially if lengthscale is not None"
         assert (
             0 < self.sep_fact <= 1
         ), "Separation factor must be between 0 and 1. Not including zero"

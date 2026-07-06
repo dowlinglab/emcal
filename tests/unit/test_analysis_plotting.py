@@ -66,7 +66,7 @@ def _build_job_ctx(tmp_path_factory, method_val, backend=None):
     sp = {"cs_name_val": 1, "meth_name_val": method_val, "ep_enum_val": 1, "bo_run_num": 1,
           "bo_run_tot": 1, "kernel_enum_val": 1, "gen_meth_theta": 1,
           "bo_runs_in_job": 1, "bo_iter_tot": 3, "with_noise": False,
-          "ep0": 1, "sep_fact": 1.0, "normalize": True, "lenscl": None, "outputscl": None,
+          "ep0": 1, "sep_fact": 1.0, "normalize": True, "lengthscale": None, "outputscale": None,
           "retrain_gp": 3, "reoptimize_obj": 3, "gen_heat_map_data": False,
           "seed": 1, "obj_tol": 1e-7, "ei_tol": 1e-7}
     with open(ws / "signac_statepoint.json", "w") as f:

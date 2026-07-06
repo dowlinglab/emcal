@@ -8,7 +8,7 @@ from emcal import BOConfig, Kernel
 def _valid_kwargs(**over):
     kw = dict(
         cs_name="CS1", ep0=1, sep_fact=1.0, normalize=True, kernel=Kernel(1),
-        lenscl=None, outputscl=None, retrain_gp=3, reoptimize_obj=3,
+        lengthscale=None, outputscale=None, retrain_gp=3, reoptimize_obj=3,
         gen_heat_map_data=False, bo_iter_tot=3, bo_run_tot=1, save_data=False,
         created_at=None, seed=1, obj_tol=1e-7, acq_tol=1e-7, compute_y_sse=True,
         with_noise=False,
@@ -35,9 +35,9 @@ def test_positional_construction_matches_fields():
 
 
 def test_lenscl_list_becomes_array():
-    c = BOConfig(**_valid_kwargs(lenscl=[1.0, 2.0]))
-    assert isinstance(c.lenscl, np.ndarray)
-    assert list(c.lenscl) == [1.0, 2.0]
+    c = BOConfig(**_valid_kwargs(lengthscale=[1.0, 2.0]))
+    assert isinstance(c.lengthscale, np.ndarray)
+    assert list(c.lengthscale) == [1.0, 2.0]
 
 
 @pytest.mark.parametrize("bad", [
@@ -46,7 +46,7 @@ def test_lenscl_list_becomes_array():
     dict(bo_iter_tot=0),     # must be > 0
     dict(retrain_gp=-1),     # must be >= 0
     dict(seed=0),            # int >= 1 or None
-    dict(outputscl=-1.0),    # > 0 if given
+    dict(outputscale=-1.0),    # > 0 if given
     dict(acq_tol=-1e-7),     # >= 0
 ])
 def test_validation_rejects_bad_values(bad):

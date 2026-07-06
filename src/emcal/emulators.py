@@ -42,9 +42,9 @@ class GPEmulator:
         gp_val_data,
         cand_data,
         kernel,
-        lenscl,
+        lengthscale,
         noise_std,
-        outputscl,
+        outputscale,
         retrain_gp,
         set_seed,
         normalize,
@@ -61,11 +61,11 @@ class GPEmulator:
             Candidate theta value for evaluation with GPBODriver.opt_with_scipy()
         kernel: Kernel
             Determines which GP Kerenel to use
-        lenscl: float or None
+        lengthscale: float or None
             Value of the lengthscale hyperparameter - None if hyperparameters will be updated during training
         noise_std: float, int
             The standard deviation of the noise
-        outputscl: float or None
+        outputscale: float or None
             Determines value of outputscale
         retrain_gp: int
             Number of times to (re)do GP training. If 0, no training is done and default/initial values are used
@@ -85,35 +85,35 @@ class GPEmulator:
         # Assert statements
         # Check for int/float
         assert (
-            isinstance(outputscl, (float, int)) or outputscl is None
-        ), "outputscl must be float, int, or None"
-        # Check that set values for outputscl are in range
-        if outputscl is not None:
+            isinstance(outputscale, (float, int)) or outputscale is None
+        ), "outputscale must be float, int, or None"
+        # Check that set values for outputscale are in range
+        if outputscale is not None:
             assert (
-                100 > outputscl > 1e-5
-            ), "outputscl must be in range [1e-5,1e3] if it is not None"
+                100 > outputscale > 1e-5
+            ), "outputscale must be in range [1e-5,1e3] if it is not None"
 
-        # Check lenscl, float, int, array, or None
-        if isinstance(lenscl, list):
-            lenscl = np.array(lenscl)
+        # Check lengthscale, float, int, array, or None
+        if isinstance(lengthscale, list):
+            lengthscale = np.array(lengthscale)
         assert (
-            isinstance(lenscl, (float, int, np.ndarray)) or lenscl is None
-        ), "lenscl must be float, int, np.ndarray, or None"
-        # Check that set values for lenscl are in range
-        if lenscl is not None:
-            if isinstance(lenscl, (float, int)):
+            isinstance(lengthscale, (float, int, np.ndarray)) or lengthscale is None
+        ), "lengthscale must be float, int, np.ndarray, or None"
+        # Check that set values for lengthscale are in range
+        if lengthscale is not None:
+            if isinstance(lengthscale, (float, int)):
                 assert (
-                    1000 > lenscl > 1e-5
-                ), "lenscl must be in range [1e-5,1e3] if lenscl is not None"
+                    1000 > lengthscale > 1e-5
+                ), "lengthscale must be in range [1e-5,1e3] if lengthscale is not None"
             else:
                 assert all(
                     isinstance(var, (np.int64, np.float64, float, int))
-                    for var in lenscl
-                ), "All lenscl elements must float or int"
+                    for var in lengthscale
+                ), "All lengthscale elements must float or int"
                 assert all(
-                    1000 > item > 1e-5 for item in lenscl
-                ), "lenscl elements must be in range [1e-5,1e3] if lenscl is not None"
-                lenscl = lenscl.astype(np.float64)  # Convert all guesses to float64
+                    1000 > item > 1e-5 for item in lengthscale
+                ), "lengthscale elements must be in range [1e-5,1e3] if lengthscale is not None"
+                lengthscale = lengthscale.astype(np.float64)  # Convert all guesses to float64
 
         assert isinstance(normalize, bool), "normalize must be bool"
         assert (
@@ -134,9 +134,9 @@ class GPEmulator:
         self.gp_val_data = gp_val_data
         self.cand_data = cand_data
         self.kernel = kernel
-        self.lenscl = lenscl
+        self.lengthscale = lengthscale
         self.noise_std = noise_std
-        self.outputscl = outputscl
+        self.outputscale = outputscale
         self.retrain_gp = retrain_gp
         self.seed = set_seed
         self.normalize = normalize
@@ -258,7 +258,7 @@ class GPEmulator:
             If self.train_data_init is not an array
         """
         rng = self.rng_set
-        # Set lenscl bounds using the original training data to ensure distance
+        # Set lengthscale bounds using the original training data to ensure distance
         # Between min and max lengthscales does not collapse as iterations progress
         assert isinstance(
             self.train_data_init, np.ndarray
@@ -353,8 +353,8 @@ class GPEmulator:
         Need to have training data before using this function
         """
 
-        # Set outputscl kernel to be optimized based on guess if desired
-        if self.outputscl == None:
+        # Set outputscale kernel to be optimized based on guess if desired
+        if self.outputscale == None:
             train_y = self.train_data.y_vals.reshape(-1, 1)
             if self.normalize:
                 scl_y = self.scaler_y.fit_transform(train_y)
@@ -364,9 +364,9 @@ class GPEmulator:
             c_guess = sum(scl_y.flatten() ** 2) / len(scl_y)
             outputscale = c_guess
 
-        elif isinstance(self.outputscl, (float, int, np.float64)):
-            assert self.outputscl > 0, "outputscl must be positive int or float"
-            outputscale = self.outputscl
+        elif isinstance(self.outputscale, (float, int, np.float64)):
+            assert self.outputscale > 0, "outputscale must be positive int or float"
+            outputscale = self.outputscale
         else:
             outputscale = 1.0
 
@@ -438,32 +438,32 @@ class GPEmulator:
         data = self.set_gp_model_data()
         x_train, y_train = data
 
-        if isinstance(self.lenscl, np.ndarray):
+        if isinstance(self.lengthscale, np.ndarray):
             lengthscales = self.bounded_parameter(
-                lenscl_bnds[0], lenscl_bnds[1], self.lenscl
+                lenscl_bnds[0], lenscl_bnds[1], self.lengthscale
             )
-        elif isinstance(self.lenscl, (int, float)):
+        elif isinstance(self.lengthscale, (int, float)):
             lengthscales = np.ones(x_train.shape[1]) * self.bounded_parameter(
-                lenscl_bnds[0], lenscl_bnds[1], self.lenscl
+                lenscl_bnds[0], lenscl_bnds[1], self.lengthscale
             )
-        if self.outputscl is not None:
-            outputscale = self.bounded_parameter(var_bnds[0], var_bnds[1], self.outputscl)
+        if self.outputscale is not None:
+            outputscale = self.bounded_parameter(var_bnds[0], var_bnds[1], self.outputscale)
 
         # On the 1st iteration, use initial guesses initialized to 1
         if retrain_count == 0:
-            if self.lenscl is None:
+            if self.lengthscale is None:
                 lengthscale_1 = self.bounded_parameter(
                     lenscl_bnds[0], lenscl_bnds[1], 1.0
                 )
                 lengthscales = np.ones(x_train.shape[1]) * lengthscale_1
-            if self.outputscl is None:
+            if self.outputscale is None:
                 outputscale = self.bounded_parameter(var_bnds[0], var_bnds[1], 1.0)
             white_var = self.bounded_parameter(
                 white_var_bnds[0], white_var_bnds[1], 1.0
             )
         # On second iteration, base guesses on initial data values
         elif retrain_count == 1:
-            if self.lenscl is None:
+            if self.lengthscale is None:
                 initial_lenscls = np.array(
                     self.__set_lenscl_guess(lenscl_bnds[0], lenscl_bnds[1]),
                     dtype="float64",
@@ -471,7 +471,7 @@ class GPEmulator:
                 lengthscales = self.bounded_parameter(
                     lenscl_bnds[0], lenscl_bnds[1], initial_lenscls
                 )
-            if self.outputscl is None:
+            if self.outputscale is None:
                 initial_tau = np.array(
                     self.__set_outputscl(var_bnds[0], var_bnds[1]), dtype="float64"
                 )
@@ -485,14 +485,14 @@ class GPEmulator:
             )
         # On all other iterations, use random guesses
         else:
-            if self.lenscl is None:
+            if self.lengthscale is None:
                 initial_lenscls = np.array(
                     rng.uniform(0.1, 100.0, x_train.shape[1]), dtype="float64"
                 )
                 lengthscales = self.bounded_parameter(
                     lenscl_bnds[0], lenscl_bnds[1], initial_lenscls
                 )
-            if self.outputscl is None:
+            if self.outputscale is None:
                 outputscale = self.bounded_parameter(
                     var_bnds[0],
                     var_bnds[1],
@@ -531,8 +531,8 @@ class GPEmulator:
         data = self.set_gp_model_data()
         lengthscales, outputscale, white_var = self.__init_hyper_parameters(retrain_count)
 
-        fix_lengthscale = isinstance(self.lenscl, (np.ndarray, float, int))
-        fix_outputscale = self.outputscl is not None
+        fix_lengthscale = isinstance(self.lengthscale, (np.ndarray, float, int))
+        fix_outputscale = self.outputscale is not None
         gp_model = self._backend.build_model(
             data,
             self.kernel.value,
@@ -1087,9 +1087,9 @@ class ObjectiveGP(GPEmulator):
         train_data,
         test_data,
         kernel,
-        lenscl,
+        lengthscale,
         noise_std,
-        outputscl,
+        outputscale,
         retrain_gp,
         set_seed,
         normalize,
@@ -1110,11 +1110,11 @@ class ObjectiveGP(GPEmulator):
             The testing data for the GP
         kernel: Kernel
             Determines which GP Kerenel to use
-        lenscl: float or None
+        lengthscale: float or None
             Value of the lengthscale hyperparameter - None if hyperparameters will be updated during training
         noise_std: float, int
             The standard deviation of the noise
-        outputscl: float or None
+        outputscale: float or None
             Determines value of outputscale - None if hyperparameters will be updated during training
         retrain_gp: int
             Number of times to (re)train the GP. If 0, the GP is not trained and default/initial hyperparameters are used
@@ -1137,9 +1137,9 @@ class ObjectiveGP(GPEmulator):
             gp_val_data,
             cand_data,
             kernel,
-            lenscl,
+            lengthscale,
             noise_std,
-            outputscl,
+            outputscale,
             retrain_gp,
             set_seed,
             normalize,
@@ -1314,9 +1314,9 @@ class EmulatorGP(GPEmulator):
         train_data,
         test_data,
         kernel,
-        lenscl,
+        lengthscale,
         noise_std,
-        outputscl,
+        outputscale,
         retrain_gp,
         set_seed,
         normalize,
@@ -1337,11 +1337,11 @@ class EmulatorGP(GPEmulator):
             The testing data for the GP
         kernel: Kernel
             Determines which GP Kerenel to use
-        lenscl: float or None
+        lengthscale: float or None
             Value of the lengthscale hyperparameter - None if hyperparameters will be updated during training
         noise_std: float, int
             The standard deviation of the noise
-        outputscl: float or None
+        outputscale: float or None
             Determines value of outputscale - None if hyperparameters will be updated during training
         retrain_gp: int
             Number of times to (re)train the GP. If 0, the GP is not trained and default/initial hyperparameters are used
@@ -1364,9 +1364,9 @@ class EmulatorGP(GPEmulator):
             gp_val_data,
             cand_data,
             kernel,
-            lenscl,
+            lengthscale,
             noise_std,
-            outputscl,
+            outputscale,
             retrain_gp,
             set_seed,
             normalize,
@@ -1689,8 +1689,8 @@ def build_gp_emulator(
     val_data,
     val_sse_data,
     kernel,
-    lenscl,
-    outputscl,
+    lengthscale,
+    outputscale,
     retrain_gp,
     seed,
     normalize,
@@ -1713,7 +1713,7 @@ def build_gp_emulator(
         ObjectiveGP uses sim_sse_data.
     val_data, val_sse_data : Data or None
         Optional validation data (same two forms).
-    kernel, lenscl, outputscl, retrain_gp, seed, normalize :
+    kernel, lengthscale, outputscale, retrain_gp, seed, normalize :
         GP hyperparameter / training configuration (from BOConfig).
     simulator_noise_std : float or None
         The simulator's noise standard deviation.
@@ -1739,8 +1739,8 @@ def build_gp_emulator(
         else:
             noise_std = None
         gp_emulator = ObjectiveGP(
-            all_gp_data, all_val_data, None, None, None, kernel, lenscl, noise_std,
-            outputscl, retrain_gp, seed, normalize,
+            all_gp_data, all_val_data, None, None, None, kernel, lengthscale, noise_std,
+            outputscale, retrain_gp, seed, normalize,
             backend=backend,
         )
     else:
@@ -1748,8 +1748,8 @@ def build_gp_emulator(
         all_val_data = val_data
         noise_std = simulator_noise_std  # Yexp_std is exactly the noise_std of the GP Kernel
         gp_emulator = EmulatorGP(
-            all_gp_data, all_val_data, None, None, None, kernel, lenscl, noise_std,
-            outputscl, retrain_gp, seed, normalize,
+            all_gp_data, all_val_data, None, None, None, kernel, lengthscale, noise_std,
+            outputscale, retrain_gp, seed, normalize,
             backend=backend,
         )
     return gp_emulator

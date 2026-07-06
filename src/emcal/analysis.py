@@ -942,8 +942,8 @@ class RunAnalysis:
         sep_fact = sp_data["sep_fact"]
         normalize = sp_data["normalize"]
         kernel = Kernel(sp_data["kernel_enum_val"])
-        lenscl = sp_data["lenscl"]
-        outputscl = sp_data["outputscl"]
+        lengthscale = sp_data["lengthscale"]
+        outputscale = sp_data["outputscale"]
         retrain_gp = sp_data["retrain_gp"]
         reoptimize_obj = sp_data["reoptimize_obj"]
         gen_heat_map_data = sp_data["gen_heat_map_data"]
@@ -963,8 +963,8 @@ class RunAnalysis:
             sep_fact,
             normalize,
             kernel,
-            lenscl,
-            outputscl,
+            lengthscale,
+            outputscale,
             retrain_gp,
             reoptimize_obj,
             gen_heat_map_data,

@@ -81,10 +81,10 @@ class GpflowBackend(GPBackend):
 
     def get_hyperparameters(self, model):
         """See GPBackend.get_hyperparameters."""
-        outputscl_final = float(model.kernel.kernels[0].variance.numpy())
-        lenscl_final = model.kernel.kernels[0].lengthscales.numpy()
+        outputscale_final = float(model.kernel.kernels[0].variance.numpy())
+        lengthscale_final = model.kernel.kernels[0].lengthscales.numpy()
         noise_final = float(model.kernel.kernels[1].variance.numpy())
-        return [lenscl_final, noise_final, outputscl_final]
+        return [lengthscale_final, noise_final, outputscale_final]
 
     def make_posterior(self, model):
         """See GPBackend.make_posterior."""

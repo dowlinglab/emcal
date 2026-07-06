@@ -141,7 +141,7 @@ def build_fixture(method_val=7):
           # BOConfig exactly, so the rebuilt config reproduces the saved run. (Adding them makes the
           # statepoint match the fixture; it also shifts the parameter_/hyperparameter_trajectories
           # fingerprints, which previously ran against a statepoint missing these keys.)
-          "ep0": 1, "sep_fact": 1.0, "normalize": True, "lenscl": None, "outputscl": None,
+          "ep0": 1, "sep_fact": 1.0, "normalize": True, "lengthscale": None, "outputscale": None,
           "retrain_gp": 3, "reoptimize_obj": 3, "gen_heat_map_data": False,
           "seed": 1, "obj_tol": 1e-7, "ei_tol": 1e-7}
     with open(os.path.join(ws, "signac_statepoint.json"), "w") as f:

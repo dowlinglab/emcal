@@ -53,7 +53,7 @@ def main():
     ep_bias = ExplorationBias(1, None, EpSchedule(1), None, None, None, None, None, None, None)
 
     # --- 5. Case study / BO parameters. Positional args (see BOConfig):
-    #     name, ep0, sep_fact, normalize, kernel, lenscl, outputscl, retrain_gp,
+    #     name, ep0, sep_fact, normalize, kernel, lengthscale, outputscale, retrain_gp,
     #     reoptimize_obj, gen_heat_map_data, bo_iter_tot, bo_run_tot, save_data, created_at,
     #     set_seed, obj_tol, acq_tol, compute_y_sse, with_noise.
     #     (retrain/reopt reduced to 10 so this runs in ~1-2 min; the paper used 25.)
