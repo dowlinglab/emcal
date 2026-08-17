@@ -562,7 +562,7 @@ class Plotter:
                     z,
                     levels=cbar_ticks,
                     # tick_positions=nticks,
-                    cmap=plt.cm.get_cmap(self.cmap),
+                    cmap=plt.colormaps[self.cmap],
                     norm=norm,
                 )
 
