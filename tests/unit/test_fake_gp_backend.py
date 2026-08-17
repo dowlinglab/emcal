@@ -3,13 +3,17 @@ point on GPEmulator/build_gp_emulator/GPBODriver: passing backend=None must repr
 the exact production default (get_backend("gpflow")), so these are additive, zero-risk
 changes to the constructors.
 """
+import pytest
 import numpy as np
 
 from emcal.emulators import GPEmulator, build_gp_emulator
 from emcal.enums import Kernel
-from emcal.gp_backend.gpflow_backend import GpflowBackend
 
 from _fakes import FakeGPBackend
+
+gpflow = pytest.importorskip("gpflow", reason="gpflow not installed")
+
+from emcal.gp_backend.gpflow_backend import GpflowBackend
 
 
 def test_fake_backend_implements_full_abc_interface():

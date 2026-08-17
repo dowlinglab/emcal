@@ -134,6 +134,7 @@ def test_ei_log_emulator_is_zero_when_variance_non_positive():
 # --- __calc_ei_sparse (method 5, sparse-grid integrated EI / 2C) -------------------------
 
 def test_ei_sparse_is_deterministic_and_nonnegative():
+    pytest.importorskip("Tasmanian")
     best_error_x, ep_curr, var = 2.0, 1.5, 0.25
     method = GPBOMethod(MethodName.SPARSE_GRID)
 
@@ -190,6 +191,7 @@ def test_ei_mc_is_zero_when_variance_negative():
 
 
 def test_ei_sparse_ldl_fallback_for_non_positive_definite_covariance():
+    pytest.importorskip("Tasmanian")
     # __calc_ei_sparse diagonalizes self.gp_covar with Cholesky, falling back to LDL when
     # that fails; a non-PD covariance (eigenvalues 3, -1) forces the except branch.
     method = GPBOMethod(MethodName.SPARSE_GRID)

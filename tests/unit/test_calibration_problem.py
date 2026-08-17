@@ -67,6 +67,8 @@ def test_bad_bound_order():
 
 @pytest.mark.parametrize("cs", BUILT_INS)
 def test_get_case_study_returns_valid_problem(cs):
+    if cs in (2, 3):
+        pytest.importorskip("pyomo")
     p = get_case_study(cs)
     assert isinstance(p, CalibrationProblem)
     assert len(p.param_names) == len(p.param_bounds)
